@@ -11,6 +11,7 @@ import (
 
 const (
 	reportInterval = 10 * time.Second
+	pollInterval   = 2 * time.Second
 	numJobs        = 25
 )
 
@@ -25,17 +26,21 @@ func main() {
 		go sendMetric(metricsChan, respClient)
 		go sendPollCountMetric(pollCountMetricsChan, respClient)
 	}
-	ticker := time.NewTicker(reportInterval)
+	reportIntervalTicker := time.NewTicker(reportInterval)
+	pollIntervalTicker := time.NewTicker(pollInterval)
 	for {
-		<-ticker.C
+		<-pollIntervalTicker.C
 		GetRuntimeStat(&runtimeStats)
 		metricValue := requestValue.SetMetricValue(runtimeStats)
 
-		for _, metric := range metricValue {
-			if !metric.GaugeMetricISEmpty() {
-				metricsChan <- metric
+		go func() {
+			<-reportIntervalTicker.C
+			for _, metric := range metricValue {
+				if !metric.GaugeMetricISEmpty() {
+					metricsChan <- metric
+				}
 			}
-		}
+		}()
 
 		pollCountMetricsChan <- requestValue.SetPollCountMetricValue()
 	}

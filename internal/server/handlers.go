@@ -22,10 +22,10 @@ type RequestBody struct {
 }
 
 type handler struct {
-	storage Storage
+	storage *Storage
 }
 
-func NewHandler(storage Storage) handlers.Handler {
+func NewHandler(storage *Storage) handlers.Handler {
 	return &handler{
 		storage: storage,
 	}
@@ -38,31 +38,31 @@ func (h *handler) Register(router *httprouter.Router) {
 func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 	log.Println("UpdateMetrics Get Metrics", r.URL)
 	urlValue := strings.Split(r.URL.Path, "/")
-	if len(urlValue) < 3 {
+	if len(urlValue) < 5 {
 		w.WriteHeader(404)
 		return middleware.ErrNotFound
 	}
 
-	if urlValue[1] == "Gauge" {
-		v, err := strconv.ParseFloat(urlValue[3], 64)
+	if urlValue[2] == "Gauge" {
+		v, err := strconv.ParseFloat(urlValue[4], 64)
 		if err != nil {
 			w.WriteHeader(500)
 			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", urlValue[3]), err.Error())
 		}
 		h.storage.SaveGaugeMetric(client.GaugeMetric{
-			Name:       urlValue[2],
-			MetricType: urlValue[1],
+			Name:       urlValue[3],
+			MetricType: urlValue[2],
 			Value:      v,
 		})
-	} else if urlValue[1] == "Counter" {
-		v, err := strconv.ParseInt(urlValue[3], 10, 64)
+	} else if urlValue[2] == "Counter" {
+		v, err := strconv.ParseInt(urlValue[4], 10, 64)
 		if err != nil {
 			w.WriteHeader(500)
 			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", urlValue[3]), err.Error())
 		}
 		h.storage.SaveCountMetric(client.CountMetric{
-			Name:       urlValue[2],
-			MetricType: urlValue[1],
+			Name:       urlValue[3],
+			MetricType: urlValue[2],
 			Value:      v,
 		})
 	}

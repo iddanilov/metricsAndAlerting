@@ -15,7 +15,7 @@ func main() {
 	storage := server.Storage{}
 
 	log.Println("register service handler")
-	handler := server.NewHandler(storage)
+	handler := server.NewHandler(&storage)
 	handler.Register(router)
 
 	s := &http.Server{
