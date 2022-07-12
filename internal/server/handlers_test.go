@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
@@ -51,14 +52,20 @@ func TestSendGauge(t *testing.T) {
 		// запускаем каждый тест
 		t.Run(tt.name, func(t *testing.T) {
 
-			request := httptest.NewRequest(http.MethodPost, "/update"+fmt.Sprintf("/%s/%s/%v/", tt.metric.metricType, tt.metric.name, tt.metric.value), nil)
+			request := httptest.NewRequest(http.MethodPost, "/update"+fmt.Sprintf("/%s/%s/%v", tt.metric.metricType, tt.metric.name, tt.metric.value), nil)
 			request.Header.Set("Content-Type", "text/plain")
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			// определяем хендлер
 			router := httprouter.New()
-			storage := Storage{}
-			h := NewHandler(&storage)
+			//router.RedirectFixedPath = false
+			router.RedirectTrailingSlash = false
+			storage := Storage{
+				Gauge:   make(map[string]client.GaugeMetric, 10),
+				Counter: make(map[string]client.CountMetric, 10),
+			}
+			mu := sync.Mutex{}
+			h := NewHandler(&storage, &mu)
 			h.Register(router)
 			// запускаем сервер
 			router.ServeHTTP(w, request)
@@ -69,7 +76,7 @@ func TestSendGauge(t *testing.T) {
 				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
 			}
 
-			assert.Equal(t, tt.want.metricResult, storage.Alloc, "Can't save metric")
+			assert.Equal(t, tt.want.metricResult, storage.Gauge[tt.want.metricResult.Name], "Can't save metric")
 
 			// получаем и проверяем тело запроса
 			defer res.Body.Close()
@@ -122,8 +129,12 @@ func TestSendCounter(t *testing.T) {
 			w := httptest.NewRecorder()
 			// определяем хендлер
 			router := httprouter.New()
-			storage := Storage{}
-			h := NewHandler(&storage)
+			storage := Storage{
+				Gauge:   make(map[string]client.GaugeMetric, 10),
+				Counter: make(map[string]client.CountMetric, 10),
+			}
+			mu := sync.Mutex{}
+			h := NewHandler(&storage, &mu)
 			h.Register(router)
 			// запускаем сервер
 			router.ServeHTTP(w, request)
@@ -134,7 +145,7 @@ func TestSendCounter(t *testing.T) {
 				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
 			}
 
-			assert.Equal(t, tt.want.metricResult, storage.PollCount, "Can't save metric")
+			assert.Equal(t, tt.want.metricResult, storage.Counter[tt.want.metricResult.Name], "Can't save metric")
 
 			// получаем и проверяем тело запроса
 			defer res.Body.Close()

@@ -10,10 +10,14 @@ type Storage struct {
 	Counter map[string]client.CountMetric
 }
 
-func (s *Storage) SaveGaugeMetric(metric client.GaugeMetric, m *sync.Mutex) {
+func (s *Storage) SaveGaugeMetric(metric client.GaugeMetric, mu *sync.Mutex) {
+	mu.Lock()
 	s.Gauge[metric.Name] = metric
+	mu.Unlock()
 }
 
-func (s *Storage) SaveCountMetric(metric client.CountMetric, m *sync.Mutex) {
+func (s *Storage) SaveCountMetric(metric client.CountMetric, mu *sync.Mutex) {
+	mu.Lock()
 	s.Counter[metric.Name] = metric
+	mu.Unlock()
 }

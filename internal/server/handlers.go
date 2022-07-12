@@ -27,11 +27,13 @@ type RequestBody struct {
 
 type handler struct {
 	storage *Storage
+	mu      *sync.Mutex
 }
 
-func NewHandler(storage *Storage) handlers.Handler {
+func NewHandler(storage *Storage, mu *sync.Mutex) handlers.Handler {
 	return &handler{
 		storage: storage,
+		mu:      mu,
 	}
 }
 
@@ -85,7 +87,6 @@ func (h *handler) GetMetricsName(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
-	var mutex sync.Mutex
 	log.Println("UpdateMetrics Metrics", r.URL)
 	urlValue := strings.Split(r.URL.Path, "/")
 	if len(urlValue) < 5 {
@@ -103,7 +104,7 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 			Name:       urlValue[3],
 			MetricType: "Gauge",
 			Value:      v,
-		}, &mutex)
+		}, h.mu)
 	} else if strings.ToLower(urlValue[2]) == "counter" {
 		v, err := strconv.ParseInt(urlValue[4], 10, 64)
 		if err != nil {
@@ -114,7 +115,7 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 			Name:       urlValue[3],
 			MetricType: "Counter",
 			Value:      v,
-		}, &mutex)
+		}, h.mu)
 	} else {
 		w.WriteHeader(404)
 		return middleware.ErrNotFound

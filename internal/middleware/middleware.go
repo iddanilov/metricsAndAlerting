@@ -12,7 +12,6 @@ func Middleware(h appHandler) http.HandlerFunc {
 		var appErr *AppError
 		err := h(w, r)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
 			if errors.As(err, &appErr) {
 				if errors.Is(err, ErrNotFound) {
 					w.WriteHeader(http.StatusNotFound)
