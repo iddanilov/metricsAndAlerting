@@ -123,7 +123,7 @@ func TestSendCounter(t *testing.T) {
 		// запускаем каждый тест
 		t.Run(tt.name, func(t *testing.T) {
 
-			request := httptest.NewRequest(http.MethodPost, "/update"+fmt.Sprintf("/%s/%s/%v/", tt.metric.metricType, tt.metric.name, tt.metric.value), nil)
+			request := httptest.NewRequest(http.MethodPost, "/update"+fmt.Sprintf("/%s/%s/%v", tt.metric.metricType, tt.metric.name, tt.metric.value), nil)
 			request.Header.Set("Content-Type", "text/plain")
 			// создаём новый Recorder
 			w := httptest.NewRecorder()

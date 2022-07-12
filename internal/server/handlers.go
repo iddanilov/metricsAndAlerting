@@ -47,7 +47,7 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error 
 	log.Println("Get Metrics", r.URL)
 	var response []byte
 	urlValue := strings.Split(r.URL.Path, "/")
-	if len(urlValue) < 5 {
+	if len(urlValue) < 4 {
 		w.WriteHeader(404)
 		return middleware.ErrNotFound
 	}
