@@ -1,12 +1,12 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/julienschmidt/httprouter"
 
@@ -51,28 +51,22 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error 
 	}
 
 	if strings.ToLower(urlValue[2]) == "gauge" {
-		var mapStorage map[string]client.GaugeMetric
-		jsonMetrics, _ := json.Marshal(h.storage)
-		json.Unmarshal(jsonMetrics, &mapStorage)
-		_, ok := mapStorage[urlValue[3]]
+		result, ok := h.storage.Gauge[urlValue[3]]
 		if !ok {
 			w.WriteHeader(404)
 			return middleware.ErrNotFound
 		}
 
-		response = []byte(fmt.Sprintf("%f", mapStorage[urlValue[3]].Value))
+		response = []byte(fmt.Sprintf("%f", result.Value))
 		w.WriteHeader(200)
 	} else if strings.ToLower(urlValue[2]) == "counter" {
-		var mapStorage map[string]client.CountMetric
-		jsonMetrics, _ := json.Marshal(h.storage)
-		json.Unmarshal(jsonMetrics, &mapStorage)
-		_, ok := mapStorage[urlValue[3]]
+		result, ok := h.storage.Counter[urlValue[3]]
 		if !ok {
 			w.WriteHeader(404)
 			return middleware.ErrNotFound
 		}
 
-		response = []byte(fmt.Sprintf("%v", mapStorage[urlValue[3]].Value))
+		response = []byte(fmt.Sprintf("%v", result.Value))
 		w.WriteHeader(200)
 	} else {
 		w.WriteHeader(404)
@@ -86,11 +80,12 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error 
 
 func (h *handler) GetMetricsName(w http.ResponseWriter, r *http.Request) error {
 	w.WriteHeader(200)
-	w.Write([]byte(CreateResponse()))
+	w.Write([]byte(CreateResponse(h.storage)))
 	return nil
 }
 
 func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
+	var mutex sync.Mutex
 	log.Println("UpdateMetrics Metrics", r.URL)
 	urlValue := strings.Split(r.URL.Path, "/")
 	if len(urlValue) < 5 {
@@ -108,7 +103,7 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 			Name:       urlValue[3],
 			MetricType: "Gauge",
 			Value:      v,
-		})
+		}, &mutex)
 	} else if strings.ToLower(urlValue[2]) == "counter" {
 		v, err := strconv.ParseInt(urlValue[4], 10, 64)
 		if err != nil {
@@ -119,7 +114,7 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 			Name:       urlValue[3],
 			MetricType: "Counter",
 			Value:      v,
-		})
+		}, &mutex)
 	} else {
 		w.WriteHeader(404)
 		return middleware.ErrNotFound
@@ -135,40 +130,17 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func CreateResponse() string {
-	baseHTML := `
-	<h1>
-		<ul>
-			<li>Alloc</li>
-			<li>BuckHashSys</li>
-			<li>Frees</li>
-			<li>GCCPUFraction</li>
-			<li>GCSys</li>
-			<li>HeapAlloc</li>
-			<li>HeapIdle</li>
-			<li>HeapInuse</li>
-			<li>HeapObjects</li>
-			<li>HeapReleased</li>
-			<li>HeapSys</li>
-			<li>LastGC</li>
-			<li>Lookups</li>
-			<li>MCacheInuse</li>
-			<li>MCacheSys</li>
-			<li>MSpanInuse</li>
-			<li>MSpanSys</li>
-			<li>Mallocs</li>
-			<li>NextGC</li>
-			<li>NumForcedGC</li>
-			<li>NumGC</li>
-			<li>OtherSys</li>
-			<li>PauseTotalNs</li>
-			<li>StackInuse</li>
-			<li>StackSys</li>
-			<li>Sys</li>
-			<li>TotalAlloc</li>
-			<li>PollCount</li>
-			<li>RandomValue</li>
-		</ul>
-	</h1>`
+func CreateResponse(s *Storage) string {
+	baseHTML := `<h1><ul>`
+	finish := "</ul></h1>"
+	for _, gmetric := range s.Gauge {
+		baseHTML = baseHTML + fmt.Sprintf("<li>%s</li>", gmetric.Name)
+	}
+	for _, cmetric := range s.Counter {
+		fmt.Sprintf("<li>%s</li>", cmetric.Name)
+		baseHTML = baseHTML + fmt.Sprintf("<li>%s</li>", cmetric.Name)
+	}
+	baseHTML = baseHTML + finish
+
 	return baseHTML
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	client "github.com/metricsAndAlerting/internal/models"
 	"log"
 	"net/http"
 	"time"
@@ -14,7 +15,10 @@ func main() {
 	log.Println("create router")
 	router := httprouter.New()
 
-	storage := server.Storage{}
+	storage := server.Storage{
+		Gauge:   make(map[string]client.GaugeMetric, 10),
+		Counter: make(map[string]client.CountMetric, 10),
+	}
 
 	log.Println("register service handler")
 	handler := server.NewHandler(&storage)
