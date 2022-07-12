@@ -2,9 +2,10 @@ package client
 
 import (
 	"fmt"
-	"github.com/metricsAndAlerting/internal/models"
 	"net/http"
 	"time"
+
+	"github.com/metricsAndAlerting/internal/models"
 )
 
 const (

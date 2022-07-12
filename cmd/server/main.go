@@ -1,11 +1,13 @@
 package main
 
 import (
-	"github.com/julienschmidt/httprouter"
-	"github.com/metricsAndAlerting/internal/server"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/julienschmidt/httprouter"
+
+	"github.com/metricsAndAlerting/internal/server"
 )
 
 func main() {

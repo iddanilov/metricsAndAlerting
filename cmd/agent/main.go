@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/metricsAndAlerting/internal/models"
 	"log"
 	"runtime"
 	"time"
 
 	client "github.com/metricsAndAlerting/internal/agent"
+	"github.com/metricsAndAlerting/internal/models"
 )
 
 const (

@@ -3,14 +3,16 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/julienschmidt/httprouter"
-	"github.com/metricsAndAlerting/internal/handlers"
-	"github.com/metricsAndAlerting/internal/middleware"
-	client "github.com/metricsAndAlerting/internal/models"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/julienschmidt/httprouter"
+
+	"github.com/metricsAndAlerting/internal/handlers"
+	"github.com/metricsAndAlerting/internal/middleware"
+	client "github.com/metricsAndAlerting/internal/models"
 )
 
 const (
