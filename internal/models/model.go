@@ -67,7 +67,7 @@ func (d *RuntimeMetric) SetPollCountMetricValue() CountMetric {
 }
 
 func (d *RuntimeMetric) SetMetricValue(runtimeStat runtime.MemStats) []GaugeMetric {
-	metric := make([]GaugeMetric, 25, 25)
+	metric := make([]GaugeMetric, 25)
 	metric = append(metric, GaugeMetric{
 		Name:       "Alloc",
 		MetricType: "Gauge",

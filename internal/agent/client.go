@@ -54,9 +54,12 @@ func (c *Client) SendPollCountMetric(params models.CountMetric) error {
 }
 
 func (c *Client) sendRequest(req *http.Request) error {
-	_, err := c.HTTPClient.Do(req)
+	resp, err := c.HTTPClient.Do(req)
+	defer resp.Body.Close()
 	if err != nil {
 		return err
 	}
+
 	return nil
+
 }
