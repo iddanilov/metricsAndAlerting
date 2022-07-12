@@ -56,17 +56,19 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error 
 		json.Unmarshal(jsonMetrics, &mapStorage)
 
 		response = []byte(fmt.Sprintf("%f", mapStorage[urlValue[3]].Value))
-	}
-
-	if strings.ToLower(urlValue[2]) == "counter" {
+		w.WriteHeader(200)
+	} else if strings.ToLower(urlValue[2]) == "counter" {
 		var mapStorage map[string]client.CountMetric
 		jsonMetrics, _ := json.Marshal(h.storage)
 		json.Unmarshal(jsonMetrics, &mapStorage)
 
 		response = []byte(fmt.Sprintf("%v", mapStorage[urlValue[3]].Value))
+		w.WriteHeader(200)
+	} else {
+		w.WriteHeader(404)
+		return middleware.ErrNotFound
 	}
 
-	w.WriteHeader(200)
 	w.Write(response)
 
 	return nil
@@ -108,6 +110,9 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 			MetricType: "Counter",
 			Value:      v,
 		})
+	} else {
+		w.WriteHeader(404)
+		return middleware.ErrNotFound
 	}
 
 	w.WriteHeader(200)
