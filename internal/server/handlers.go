@@ -54,6 +54,11 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error 
 		var mapStorage map[string]client.GaugeMetric
 		jsonMetrics, _ := json.Marshal(h.storage)
 		json.Unmarshal(jsonMetrics, &mapStorage)
+		_, ok := mapStorage[urlValue[3]]
+		if !ok {
+			w.WriteHeader(404)
+			return middleware.ErrNotFound
+		}
 
 		response = []byte(fmt.Sprintf("%f", mapStorage[urlValue[3]].Value))
 		w.WriteHeader(200)
@@ -61,6 +66,11 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error 
 		var mapStorage map[string]client.CountMetric
 		jsonMetrics, _ := json.Marshal(h.storage)
 		json.Unmarshal(jsonMetrics, &mapStorage)
+		_, ok := mapStorage[urlValue[3]]
+		if !ok {
+			w.WriteHeader(404)
+			return middleware.ErrNotFound
+		}
 
 		response = []byte(fmt.Sprintf("%v", mapStorage[urlValue[3]].Value))
 		w.WriteHeader(200)
