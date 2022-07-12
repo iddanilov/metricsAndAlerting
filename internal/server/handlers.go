@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	update = "/update/:type/:name/:value/"
-	value  = "/value/:type/:name/"
+	update      = "/update/:type/:name/:value/"
+	value       = "/value/:type/:name/"
+	metricsName = "/"
 )
 
 type RequestBody struct {
@@ -43,7 +44,7 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 		return middleware.ErrNotFound
 	}
 
-	if urlValue[2] == "Gauge" {
+	if strings.ToLower(urlValue[2]) == "gauge" {
 		v, err := strconv.ParseFloat(urlValue[4], 64)
 		if err != nil {
 			w.WriteHeader(500)
@@ -51,10 +52,10 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 		}
 		h.storage.SaveGaugeMetric(client.GaugeMetric{
 			Name:       urlValue[3],
-			MetricType: urlValue[2],
+			MetricType: "Gauge",
 			Value:      v,
 		})
-	} else if urlValue[2] == "Counter" {
+	} else if strings.ToLower(urlValue[2]) == "counter" {
 		v, err := strconv.ParseInt(urlValue[4], 10, 64)
 		if err != nil {
 			w.WriteHeader(500)
@@ -62,7 +63,7 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 		}
 		h.storage.SaveCountMetric(client.CountMetric{
 			Name:       urlValue[3],
-			MetricType: urlValue[2],
+			MetricType: "Counter",
 			Value:      v,
 		})
 	}

@@ -99,7 +99,7 @@ func TestSendCounter(t *testing.T) {
 			name: "positive test #1",
 			metric: metric{
 				name:       "PollCount",
-				metricType: "Counter",
+				metricType: "counter",
 				value:      5,
 			},
 			want: want{
