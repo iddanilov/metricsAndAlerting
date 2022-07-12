@@ -3,9 +3,9 @@ package server
 import (
 	"fmt"
 	"github.com/julienschmidt/httprouter"
-	client "github.com/metricsAndAlerting/internal/agent"
 	"github.com/metricsAndAlerting/internal/handlers"
 	"github.com/metricsAndAlerting/internal/middleware"
+	client "github.com/metricsAndAlerting/internal/models"
 	"log"
 	"net/http"
 	"strconv"
@@ -44,12 +44,23 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	if urlValue[1] == "Gauge" {
-		v, err := strconv.ParseFloat(urlValue[3], 8)
+		v, err := strconv.ParseFloat(urlValue[3], 64)
 		if err != nil {
 			w.WriteHeader(500)
 			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", urlValue[3]), err.Error())
 		}
-		h.storage.SetGaugeMetric(client.GaugeMetric{
+		h.storage.SaveGaugeMetric(client.GaugeMetric{
+			Name:       urlValue[2],
+			MetricType: urlValue[1],
+			Value:      v,
+		})
+	} else if urlValue[1] == "Counter" {
+		v, err := strconv.ParseInt(urlValue[3], 10, 64)
+		if err != nil {
+			w.WriteHeader(500)
+			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", urlValue[3]), err.Error())
+		}
+		h.storage.SaveCountMetric(client.CountMetric{
 			Name:       urlValue[2],
 			MetricType: urlValue[1],
 			Value:      v,

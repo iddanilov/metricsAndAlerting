@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"github.com/metricsAndAlerting/internal/models"
 	"net/http"
 	"time"
 )
@@ -25,7 +26,7 @@ func NewClient() *Client {
 	}
 }
 
-func (c *Client) SendMetrics(params GaugeMetric) error {
+func (c *Client) SendMetrics(params models.GaugeMetric) error {
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.baseURL, params.MetricType, params.Name, params.Value), nil)
 	if err != nil {
 		return err
@@ -38,7 +39,7 @@ func (c *Client) SendMetrics(params GaugeMetric) error {
 	return nil
 }
 
-func (c *Client) SendPollCountMetric(params CountMetric) error {
+func (c *Client) SendPollCountMetric(params models.CountMetric) error {
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.baseURL, params.MetricType, params.Name, params.Value), nil)
 	if err != nil {
 		return err
