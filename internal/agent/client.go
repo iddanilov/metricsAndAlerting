@@ -28,7 +28,7 @@ func NewClient() *Client {
 }
 
 func (c *Client) SendMetrics(params models.GaugeMetric) error {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.baseURL, params.MetricType, params.Name, params.Value), nil)
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v/", c.baseURL, params.MetricType, params.Name, params.Value), nil)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func (c *Client) SendMetrics(params models.GaugeMetric) error {
 }
 
 func (c *Client) SendPollCountMetric(params models.CountMetric) error {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.baseURL, params.MetricType, params.Name, params.Value), nil)
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v/", c.baseURL, params.MetricType, params.Name, params.Value), nil)
 	if err != nil {
 		return err
 	}

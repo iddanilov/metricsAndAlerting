@@ -40,9 +40,9 @@ func main() {
 					metricsChan <- metric
 				}
 			}
+			pollCountMetricsChan <- requestValue.SetPollCountMetricValue()
 		}()
 
-		pollCountMetricsChan <- requestValue.SetPollCountMetricValue()
 	}
 }
 

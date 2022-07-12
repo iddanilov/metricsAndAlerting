@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	update      = "/update/:type/:name/:value/"
-	value       = "/value/:type/:name/"
+	update      = "/update/:type/:name/:value"
+	value       = "/value/:type/:name"
 	metricsName = "/"
 )
 
