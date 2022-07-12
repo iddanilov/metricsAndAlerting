@@ -59,7 +59,7 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error 
 			return middleware.ErrNotFound
 		}
 
-		response = []byte(fmt.Sprintf("%f", result.Value))
+		response = []byte(fmt.Sprintf("%.2f", result.Value))
 		w.WriteHeader(200)
 	} else if strings.ToLower(urlValue[2]) == "counter" {
 		result, ok := h.storage.Counter[urlValue[3]]
@@ -68,7 +68,7 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error 
 			return middleware.ErrNotFound
 		}
 
-		response = []byte(fmt.Sprintf("%v", result.Value))
+		response = []byte(fmt.Sprintf("%.2f", result.Value))
 		w.WriteHeader(200)
 	} else {
 		w.WriteHeader(404)
