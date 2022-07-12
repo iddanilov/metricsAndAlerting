@@ -97,7 +97,7 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 	if strings.ToLower(urlValue[2]) == "gauge" {
 		v, err := strconv.ParseFloat(urlValue[4], 64)
 		if err != nil {
-			w.WriteHeader(500)
+			w.WriteHeader(400)
 			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", urlValue[3]), err.Error())
 		}
 		h.storage.SaveGaugeMetric(client.GaugeMetric{
@@ -108,7 +108,7 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 	} else if strings.ToLower(urlValue[2]) == "counter" {
 		v, err := strconv.ParseInt(urlValue[4], 10, 64)
 		if err != nil {
-			w.WriteHeader(500)
+			w.WriteHeader(400)
 			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", urlValue[3]), err.Error())
 		}
 		h.storage.SaveCountMetric(client.CountMetric{
@@ -117,7 +117,7 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 			Value:      v,
 		}, h.mu)
 	} else {
-		w.WriteHeader(404)
+		w.WriteHeader(501)
 		return middleware.ErrNotFound
 	}
 
@@ -138,7 +138,6 @@ func CreateResponse(s *Storage) string {
 		baseHTML = baseHTML + fmt.Sprintf("<li>%s</li>", gmetric.Name)
 	}
 	for _, cmetric := range s.Counter {
-		fmt.Sprintf("<li>%s</li>", cmetric.Name)
 		baseHTML = baseHTML + fmt.Sprintf("<li>%s</li>", cmetric.Name)
 	}
 	baseHTML = baseHTML + finish
