@@ -20,7 +20,7 @@ func (s *Storage) SaveCountMetric(metric client.CountMetric, mu *sync.Mutex) {
 	mu.Lock()
 	result, ok := s.Counter[metric.Name]
 	if ok {
-		metric.Value = metric.Value + result.Value
+		result.Value = metric.Value + result.Value
 	} else {
 		s.Counter[metric.Name] = metric
 	}
