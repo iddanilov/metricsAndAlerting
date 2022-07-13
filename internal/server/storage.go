@@ -2,6 +2,7 @@ package server
 
 import (
 	client "github.com/metricsAndAlerting/internal/models"
+	"log"
 	"sync"
 )
 
@@ -20,7 +21,9 @@ func (s *Storage) SaveCountMetric(metric client.CountMetric, mu *sync.Mutex) {
 	mu.Lock()
 	result, ok := s.Counter[metric.Name]
 	if ok {
-		result.Value = metric.Value + result.Value
+		result.Value = result.Value + metric.Value
+		log.Println(result.Value)
+		s.Counter[metric.Name] = result
 	} else {
 		s.Counter[metric.Name] = metric
 	}
