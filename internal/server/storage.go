@@ -1,24 +1,26 @@
 package server
 
 import (
-	client "github.com/metricsAndAlerting/internal/models"
 	"log"
 	"sync"
+
+	client "github.com/metricsAndAlerting/internal/models"
 )
 
 type Storage struct {
 	Gauge   map[string]client.GaugeMetric
 	Counter map[string]client.CountMetric
+	Mutex   *sync.Mutex
 }
 
-func (s *Storage) SaveGaugeMetric(metric client.GaugeMetric, mu *sync.Mutex) {
-	mu.Lock()
+func (s *Storage) SaveGaugeMetric(metric client.GaugeMetric) {
+	s.Mutex.Lock()
 	s.Gauge[metric.Name] = metric
-	mu.Unlock()
+	defer s.Mutex.Unlock()
 }
 
-func (s *Storage) SaveCountMetric(metric client.CountMetric, mu *sync.Mutex) {
-	mu.Lock()
+func (s *Storage) SaveCountMetric(metric client.CountMetric) {
+	s.Mutex.Lock()
 	result, ok := s.Counter[metric.Name]
 	if ok {
 		result.Value = result.Value + metric.Value
@@ -28,5 +30,5 @@ func (s *Storage) SaveCountMetric(metric client.CountMetric, mu *sync.Mutex) {
 		s.Counter[metric.Name] = metric
 	}
 
-	mu.Unlock()
+	defer s.Mutex.Unlock()
 }

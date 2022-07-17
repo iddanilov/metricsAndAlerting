@@ -1,7 +1,6 @@
 package main
 
 import (
-	client "github.com/metricsAndAlerting/internal/models"
 	"log"
 	"net/http"
 	"sync"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
+	client "github.com/metricsAndAlerting/internal/models"
 	"github.com/metricsAndAlerting/internal/server"
 )
 
@@ -20,11 +20,11 @@ func main() {
 	storage := server.Storage{
 		Gauge:   make(map[string]client.GaugeMetric, 10),
 		Counter: make(map[string]client.CountMetric, 10),
+		Mutex:   &sync.Mutex{},
 	}
 
 	log.Println("register service handler")
-	mutex := sync.Mutex{}
-	handler := server.NewHandler(&storage, &mutex)
+	handler := server.NewHandler(&storage)
 	handler.Register(router)
 
 	s := &http.Server{

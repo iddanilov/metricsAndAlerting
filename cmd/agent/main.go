@@ -23,8 +23,8 @@ func main() {
 	metricsChan := make(chan models.GaugeMetric, numJobs)
 	pollCountMetricsChan := make(chan models.CountMetric, 1)
 	for w := 1; w <= numJobs; w++ {
-		go sendMetric(metricsChan, respClient)
-		go sendPollCountMetric(pollCountMetricsChan, respClient)
+		go sendGaugeMetric(metricsChan, respClient)
+		go sendCountMetric(pollCountMetricsChan, respClient)
 	}
 	reportIntervalTicker := time.NewTicker(reportInterval)
 	pollIntervalTicker := time.NewTicker(pollInterval)
@@ -32,9 +32,12 @@ func main() {
 		<-pollIntervalTicker.C
 		GetRuntimeStat(&runtimeStats)
 		metricValue := requestValue.SetMetricValue(runtimeStats)
+		log.Println(metricValue)
 
 		go func() {
 			<-reportIntervalTicker.C
+			GetRuntimeStat(&runtimeStats)
+			metricValue = requestValue.SetMetricValue(runtimeStats)
 			for _, metric := range metricValue {
 				if !metric.GaugeMetricISEmpty() {
 					metricsChan <- metric
@@ -46,7 +49,7 @@ func main() {
 	}
 }
 
-func sendMetric(jobs <-chan models.GaugeMetric, resp *client.Client) {
+func sendGaugeMetric(jobs <-chan models.GaugeMetric, resp *client.Client) {
 	for j := range jobs {
 		log.Println(j)
 		err := resp.SendMetrics(j)
@@ -56,7 +59,7 @@ func sendMetric(jobs <-chan models.GaugeMetric, resp *client.Client) {
 	}
 }
 
-func sendPollCountMetric(jobs <-chan models.CountMetric, resp *client.Client) {
+func sendCountMetric(jobs <-chan models.CountMetric, resp *client.Client) {
 	for j := range jobs {
 		log.Println(j)
 		err := resp.SendPollCountMetric(j)

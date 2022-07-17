@@ -2,13 +2,11 @@ package server
 
 import (
 	"fmt"
+	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
-
-	"github.com/julienschmidt/httprouter"
 
 	"github.com/metricsAndAlerting/internal/handlers"
 	"github.com/metricsAndAlerting/internal/middleware"
@@ -27,13 +25,11 @@ type RequestBody struct {
 
 type handler struct {
 	storage *Storage
-	mu      *sync.Mutex
 }
 
-func NewHandler(storage *Storage, mu *sync.Mutex) handlers.Handler {
+func NewHandler(storage *Storage) handlers.Handler {
 	return &handler{
 		storage: storage,
-		mu:      mu,
 	}
 }
 
@@ -75,15 +71,15 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error 
 		return middleware.ErrNotFound
 	}
 
-	w.Write(response)
+	_, err := w.Write(response)
 
-	return nil
+	return err
 }
 
 func (h *handler) GetMetricsName(w http.ResponseWriter, r *http.Request) error {
 	w.WriteHeader(200)
-	w.Write([]byte(CreateResponse(h.storage)))
-	return nil
+	_, err := w.Write([]byte(CreateResponse(h.storage)))
+	return err
 }
 
 func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
@@ -98,24 +94,24 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 		v, err := strconv.ParseFloat(urlValue[4], 64)
 		if err != nil {
 			w.WriteHeader(400)
-			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", urlValue[3]), err.Error())
+			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", urlValue[3]))
 		}
 		h.storage.SaveGaugeMetric(client.GaugeMetric{
 			Name:       urlValue[3],
 			MetricType: "Gauge",
 			Value:      v,
-		}, h.mu)
+		})
 	} else if strings.ToLower(urlValue[2]) == "counter" {
 		v, err := strconv.ParseInt(urlValue[4], 10, 64)
 		if err != nil {
 			w.WriteHeader(400)
-			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", urlValue[3]), err.Error())
+			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", urlValue[3]))
 		}
 		h.storage.SaveCountMetric(client.CountMetric{
 			Name:       urlValue[3],
 			MetricType: "Counter",
 			Value:      v,
-		}, h.mu)
+		})
 	} else {
 		w.WriteHeader(501)
 		return middleware.ErrNotFound
