@@ -1,9 +1,10 @@
 package server
 
 import (
-	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	client "github.com/metricsAndAlerting/internal/models"
 )

@@ -484,7 +484,7 @@ func TestGetCreateResponse(t *testing.T) {
 				storage.Counter[tt.countMetricResult.Name] = tt.countMetricResult
 			}
 
-			assert.Equal(t, CreateResponse(&storage), tt.result)
+			assert.Equal(t, createResponse(&storage), tt.result)
 
 		})
 	}

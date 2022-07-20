@@ -14,7 +14,6 @@ const (
 
 type Client struct {
 	baseURL    string
-	apiKey     string
 	HTTPClient *http.Client
 }
 

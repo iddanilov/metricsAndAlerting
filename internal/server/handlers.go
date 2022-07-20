@@ -2,11 +2,12 @@ package server
 
 import (
 	"fmt"
-	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/julienschmidt/httprouter"
 
 	"github.com/metricsAndAlerting/internal/handlers"
 	"github.com/metricsAndAlerting/internal/middleware"
@@ -42,32 +43,32 @@ func (h *handler) Register(router *httprouter.Router) {
 func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error {
 	log.Println("Get Metrics", r.URL)
 	var response []byte
-	urlValue := strings.Split(r.URL.Path, "/")
-	if len(urlValue) < 4 {
-		w.WriteHeader(404)
+	urlValues := strings.Split(r.URL.Path, "/")
+	if len(urlValues) < 4 {
+		w.WriteHeader(http.StatusNotFound)
 		return middleware.ErrNotFound
 	}
 
-	if strings.ToLower(urlValue[2]) == "gauge" {
-		result, ok := h.storage.Gauge[urlValue[3]]
+	if strings.ToLower(urlValues[2]) == "gauge" {
+		result, ok := h.storage.Gauge[urlValues[3]]
 		if !ok {
-			w.WriteHeader(404)
+			w.WriteHeader(http.StatusNotFound)
 			return middleware.ErrNotFound
 		}
 
 		response = []byte(fmt.Sprintf("%v", result.Value))
-		w.WriteHeader(200)
-	} else if strings.ToLower(urlValue[2]) == "counter" {
-		result, ok := h.storage.Counter[urlValue[3]]
+		w.WriteHeader(http.StatusOK)
+	} else if strings.ToLower(urlValues[2]) == "counter" {
+		result, ok := h.storage.Counter[urlValues[3]]
 		if !ok {
-			w.WriteHeader(404)
+			w.WriteHeader(http.StatusNotFound)
 			return middleware.ErrNotFound
 		}
 
 		response = []byte(fmt.Sprintf("%v", result.Value))
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	} else {
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 		return middleware.ErrNotFound
 	}
 
@@ -77,8 +78,8 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error 
 }
 
 func (h *handler) GetMetricsName(w http.ResponseWriter, r *http.Request) error {
-	w.WriteHeader(200)
-	_, err := w.Write([]byte(CreateResponse(h.storage)))
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write([]byte(createResponse(h.storage)))
 	return err
 }
 
@@ -86,14 +87,14 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 	log.Println("UpdateMetrics Metrics", r.URL)
 	urlValue := strings.Split(r.URL.Path, "/")
 	if len(urlValue) < 5 {
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 		return middleware.ErrNotFound
 	}
 
 	if strings.ToLower(urlValue[2]) == "gauge" {
 		v, err := strconv.ParseFloat(urlValue[4], 64)
 		if err != nil {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", urlValue[3]))
 		}
 		h.storage.SaveGaugeMetric(client.GaugeMetric{
@@ -104,7 +105,7 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 	} else if strings.ToLower(urlValue[2]) == "counter" {
 		v, err := strconv.ParseInt(urlValue[4], 10, 64)
 		if err != nil {
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", urlValue[3]))
 		}
 		h.storage.SaveCountMetric(client.CountMetric{
@@ -117,7 +118,7 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 		return middleware.ErrNotFound
 	}
 
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte{})
 	if err != nil {
 		log.Println("Write err: ", err.Error())
@@ -127,7 +128,7 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func CreateResponse(s *Storage) string {
+func createResponse(s *Storage) string {
 	baseHTML := `<h1><ul>`
 	finish := "</ul></h1>"
 	for _, gmetric := range s.Gauge {
