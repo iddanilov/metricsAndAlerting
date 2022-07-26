@@ -60,6 +60,7 @@ func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) error {
 	if !ok {
 		return middleware.ErrNotFound
 	}
+	w.Header().Set("Content-Type", "application/json")
 	body, err := json.Marshal(response)
 	if err != nil {
 		return err

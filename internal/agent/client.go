@@ -14,12 +14,8 @@ import (
 	"github.com/metricsAndAlerting/internal/models"
 )
 
-const (
-	BaseURL = "http://127.0.0.1:8080"
-)
-
 type Config struct {
-	ADDRESS        string `env:"ADDRESS" envDefault:"http://127.0.0.1:8080"`
+	ADDRESS        string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
 	ReportInterval int64  `env:"REPORT_INTERVAL" envDefault:"10"`
 	PollInterval   int64  `env:"POLL_INTERVAL" envDefault:"2"`
 }
