@@ -9,11 +9,7 @@ import (
 	"github.com/metricsAndAlerting/internal/models"
 )
 
-const (
-	reportInterval = 10 * time.Second
-	pollInterval   = 2 * time.Second
-	numJobs        = 25
-)
+const numJobs = 25
 
 func main() {
 	respClient := client.NewClient()
@@ -25,8 +21,8 @@ func main() {
 	for w := 1; w <= numJobs; w++ {
 		go sendMetrics(metricsChan, respClient)
 	}
-	reportIntervalTicker := time.NewTicker(reportInterval)
-	pollIntervalTicker := time.NewTicker(pollInterval)
+	reportIntervalTicker := time.NewTicker(time.Duration(respClient.Config.ReportInterval) * time.Second)
+	pollIntervalTicker := time.NewTicker(time.Duration(respClient.Config.PollInterval) * time.Second)
 	for {
 		<-pollIntervalTicker.C
 		GetRuntimeStat(&runtimeStats)
@@ -46,14 +42,14 @@ func sendMetrics(jobs <-chan []models.AgentMetrics, resp *client.Client) {
 	for j := range jobs {
 		for _, metrics := range j {
 			if !metrics.MetricISEmpty() {
-			}
-			err := resp.SendMetricByPath(metrics)
-			if err != nil {
-				log.Println("Err: ", err.Error())
-			}
-			err = resp.SendMetrics(metrics)
-			if err != nil {
-				log.Println("Err: ", err.Error())
+				err := resp.SendMetricByPath(metrics)
+				if err != nil {
+					log.Println("Err: ", err.Error())
+				}
+				err = resp.SendMetrics(metrics)
+				if err != nil {
+					log.Println("Err: ", err.Error())
+				}
 			}
 		}
 	}

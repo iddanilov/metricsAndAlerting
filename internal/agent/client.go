@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/caarlos0/env/v6"
+
 	"github.com/metricsAndAlerting/internal/models"
 )
 
@@ -16,14 +18,26 @@ const (
 	BaseURL = "http://127.0.0.1:8080"
 )
 
+type Config struct {
+	ADDRESS        string `env:"ADDRESS" envDefault:"http://127.0.0.1:8080"`
+	ReportInterval int64  `env:"REPORT_INTERVAL" envDefault:"10"`
+	PollInterval   int64  `env:"POLL_INTERVAL" envDefault:"2"`
+}
+
 type Client struct {
-	baseURL    string
 	HTTPClient *http.Client
+	Config     Config
 }
 
 func NewClient() *Client {
+	var cfg Config
+	err := env.Parse(&cfg)
+	fmt.Println(cfg)
+	if err != nil {
+		return nil
+	}
 	return &Client{
-		baseURL: BaseURL,
+		Config: cfg,
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,
 		},
@@ -38,7 +52,7 @@ func (c *Client) SendMetricByPath(params models.AgentMetrics) error {
 		value = strconv.FormatInt(params.Delta, 10)
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.baseURL, params.MType, params.ID, value), nil)
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.Config.ADDRESS, params.MType, params.ID, value), nil)
 	if err != nil {
 		return err
 	}
@@ -55,7 +69,7 @@ func (c *Client) SendMetrics(metrics models.AgentMetrics) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/", c.baseURL), bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/", c.Config.ADDRESS), bytes.NewBuffer(body))
 	if err != nil {
 		return err
 	}

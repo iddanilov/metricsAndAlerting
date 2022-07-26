@@ -306,10 +306,11 @@ func TestGetMetric(t *testing.T) {
 		// определяем все тесты
 		{
 			name: "[Positive] Запрос на получение метрики типа gauge с названием Alloc - получаю 200; получаю значение метрики",
-			url:  "/value/",
+			url:  "/value/Gauge/Alloc",
 			metricResult: client.AgentMetrics{
 				ID:    "Alloc",
 				MType: "Gauge",
+				Value: 5.5,
 			},
 			want: want{
 				code:     http.StatusOK,
@@ -318,11 +319,11 @@ func TestGetMetric(t *testing.T) {
 		},
 		{
 			name: "[Negative] Запрос на получение метрики типа counter с названием PollCount - получаю 200; получаю значение метрики",
-			url:  "/value",
-			metricResult: client.AgentMetrics{
+			url:  "/value/Counter/PollCount",
+			counterMetricResult: client.AgentMetrics{
 				ID:    "PollCount",
 				MType: "Counter",
-				Value: 5,
+				Delta: 5,
 			},
 			want: want{
 				code:     http.StatusOK,
@@ -346,7 +347,6 @@ func TestGetMetric(t *testing.T) {
 				Mutex:   &mu,
 			}
 			if !tt.metricResult.MetricISEmpty() {
-				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: &tt.metricResult.Value, Delta: &tt.metricResult.Delta}
 				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: &tt.metricResult.Value, Delta: &tt.metricResult.Delta}
 			}
 			if !tt.counterMetricResult.MetricISEmpty() {

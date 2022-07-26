@@ -96,7 +96,7 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error 
 			return middleware.ErrNotFound
 		}
 
-		response = []byte(fmt.Sprintf("%v", *result.Value))
+		response = []byte(fmt.Sprintf("%v", *result.Delta))
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusNotFound)
