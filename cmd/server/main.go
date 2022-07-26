@@ -14,6 +14,9 @@ import (
 
 func main() {
 	log.Println("create router")
+
+	cfg := server.NewConfig()
+
 	router := httprouter.New()
 	router.RedirectTrailingSlash = false
 
@@ -27,7 +30,7 @@ func main() {
 	handler.Register(router)
 
 	s := &http.Server{
-		Addr:         "127.0.0.1:8080",
+		Addr:         cfg.ADDRESS,
 		Handler:      router,
 		WriteTimeout: 5 * time.Second,
 		ReadTimeout:  5 * time.Second,

@@ -32,7 +32,6 @@ type Client struct {
 func NewClient() *Client {
 	var cfg Config
 	err := env.Parse(&cfg)
-	fmt.Println(cfg)
 	if err != nil {
 		return nil
 	}
@@ -73,7 +72,7 @@ func (c *Client) SendMetrics(metrics models.AgentMetrics) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "text/plain")
+	req.Header.Set("Content-Type", "application/json")
 	if err := c.sendRequest(req); err != nil {
 		return err
 	}

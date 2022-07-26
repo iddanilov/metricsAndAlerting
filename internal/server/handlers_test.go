@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -406,7 +407,7 @@ func TestGetGauge(t *testing.T) {
 			metricResult: client.AgentMetrics{
 				ID:    "PollCount",
 				MType: "Counter",
-				Value: 5,
+				Delta: 5,
 			},
 			want: want{
 				code:     http.StatusOK,
@@ -574,7 +575,8 @@ func TestGetCreateResponse(t *testing.T) {
 				storage.Metrics[tt.countMetricResult.ID] = client.Metrics{ID: tt.countMetricResult.ID, MType: tt.countMetricResult.MType, Value: &tt.countMetricResult.Value, Delta: &tt.countMetricResult.Delta}
 			}
 
-			assert.Equal(t, createResponse(&storage), tt.result)
+			assert.True(t, strings.Contains(createResponse(&storage), tt.metricResult.ID))
+			assert.True(t, strings.Contains(createResponse(&storage), tt.countMetricResult.ID))
 
 		})
 	}
