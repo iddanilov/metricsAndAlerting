@@ -21,8 +21,8 @@ func main() {
 	for w := 1; w <= numJobs; w++ {
 		go sendMetrics(metricsChan, respClient)
 	}
-	reportIntervalTicker := time.NewTicker(time.Duration(respClient.Config.ReportInterval) * time.Second)
-	pollIntervalTicker := time.NewTicker(time.Duration(respClient.Config.PollInterval) * time.Second)
+	reportIntervalTicker := time.NewTicker(respClient.Config.ReportInterval)
+	pollIntervalTicker := time.NewTicker(respClient.Config.PollInterval)
 	for {
 		<-pollIntervalTicker.C
 		GetRuntimeStat(&runtimeStats)
