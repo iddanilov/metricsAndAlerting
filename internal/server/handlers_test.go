@@ -18,7 +18,7 @@ func TestSendGauge(t *testing.T) {
 	// определяем структуру теста
 	type want struct {
 		code         int
-		metricResult client.GaugeMetric
+		metricResult client.AgentMetrics
 	}
 	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
@@ -32,10 +32,10 @@ func TestSendGauge(t *testing.T) {
 			url:  "/update/Gauge/Alloc/5.5",
 			want: want{
 				code: 200,
-				metricResult: client.GaugeMetric{
-					Name:       "Alloc",
-					MetricType: "Gauge",
-					Value:      5.5,
+				metricResult: client.AgentMetrics{
+					ID:    "Alloc",
+					MType: "Gauge",
+					Value: 5.5,
 				},
 			},
 		},
@@ -44,10 +44,10 @@ func TestSendGauge(t *testing.T) {
 			url:  "/update/Gauge/Alloc/5.5/",
 			want: want{
 				code: http.StatusNotFound,
-				metricResult: client.GaugeMetric{
-					Name:       "",
-					MetricType: "",
-					Value:      0,
+				metricResult: client.AgentMetrics{
+					ID:    "",
+					MType: "",
+					Value: 0,
 				},
 			},
 		},
@@ -56,10 +56,10 @@ func TestSendGauge(t *testing.T) {
 			url:  "/unknown/Gauge/Alloc/5.5",
 			want: want{
 				code: http.StatusNotFound,
-				metricResult: client.GaugeMetric{
-					Name:       "",
-					MetricType: "",
-					Value:      0,
+				metricResult: client.AgentMetrics{
+					ID:    "",
+					MType: "",
+					Value: 0,
 				},
 			},
 		},
@@ -68,10 +68,10 @@ func TestSendGauge(t *testing.T) {
 			url:  "/unknown/Gauge/Alloc/",
 			want: want{
 				code: http.StatusNotFound,
-				metricResult: client.GaugeMetric{
-					Name:       "",
-					MetricType: "",
-					Value:      0,
+				metricResult: client.AgentMetrics{
+					ID:    "",
+					MType: "",
+					Value: 0,
 				},
 			},
 		},
@@ -80,10 +80,10 @@ func TestSendGauge(t *testing.T) {
 			url:  "/update/Gauge",
 			want: want{
 				code: http.StatusNotFound,
-				metricResult: client.GaugeMetric{
-					Name:       "",
-					MetricType: "",
-					Value:      0,
+				metricResult: client.AgentMetrics{
+					ID:    "",
+					MType: "",
+					Value: 0,
 				},
 			},
 		},
@@ -92,10 +92,10 @@ func TestSendGauge(t *testing.T) {
 			url:  "/update/Gauge/Alloc/none",
 			want: want{
 				code: 400,
-				metricResult: client.GaugeMetric{
-					Name:       "",
-					MetricType: "",
-					Value:      0,
+				metricResult: client.AgentMetrics{
+					ID:    "",
+					MType: "",
+					Value: 0,
 				},
 			},
 		},
@@ -104,10 +104,10 @@ func TestSendGauge(t *testing.T) {
 			url:  "/updater/Gauge/Alloc/5.5",
 			want: want{
 				code: http.StatusNotFound,
-				metricResult: client.GaugeMetric{
-					Name:       "",
-					MetricType: "",
-					Value:      0,
+				metricResult: client.AgentMetrics{
+					ID:    "",
+					MType: "",
+					Value: 0,
 				},
 			},
 		},
@@ -124,8 +124,7 @@ func TestSendGauge(t *testing.T) {
 			router.RedirectTrailingSlash = false
 			mu := sync.Mutex{}
 			storage := Storage{
-				Gauge:   make(map[string]client.GaugeMetric, 10),
-				Counter: make(map[string]client.CountMetric, 10),
+				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
 			h := NewHandler(&storage)
@@ -139,8 +138,13 @@ func TestSendGauge(t *testing.T) {
 				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
 			}
 
-			assert.Equal(t, tt.want.metricResult, storage.Gauge[tt.want.metricResult.Name], "Can't save metric")
-
+			assert.Equal(t, tt.want.metricResult.ID, storage.Metrics[tt.want.metricResult.ID].ID, "Can't save metric")
+			assert.Equal(t, tt.want.metricResult.MType, storage.Metrics[tt.want.metricResult.ID].MType, "Can't save metric")
+			if tt.want.metricResult.Value != 0 {
+				assert.Equal(t, tt.want.metricResult.Value, *storage.Metrics[tt.want.metricResult.ID].Value, "Can't save metric")
+			} else {
+				assert.Equal(t, storage.Metrics, map[string]client.Metrics{})
+			}
 			// получаем и проверяем тело запроса
 			defer res.Body.Close()
 		})
@@ -151,7 +155,7 @@ func TestSendCounter(t *testing.T) {
 	// определяем структуру теста
 	type want struct {
 		code         int
-		metricResult client.CountMetric
+		metricResult client.AgentMetrics
 	}
 	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
@@ -165,10 +169,10 @@ func TestSendCounter(t *testing.T) {
 			url:  "/update/Counter/PollCount/5",
 			want: want{
 				code: 200,
-				metricResult: client.CountMetric{
-					Name:       "PollCount",
-					MetricType: "Counter",
-					Value:      5,
+				metricResult: client.AgentMetrics{
+					ID:    "PollCount",
+					MType: "Counter",
+					Delta: 5,
 				},
 			},
 		},
@@ -177,10 +181,10 @@ func TestSendCounter(t *testing.T) {
 			url:  "/update/Counter/PollCount/5/",
 			want: want{
 				code: http.StatusNotFound,
-				metricResult: client.CountMetric{
-					Name:       "",
-					MetricType: "",
-					Value:      0,
+				metricResult: client.AgentMetrics{
+					ID:    "",
+					MType: "",
+					Delta: 0,
 				},
 			},
 		},
@@ -189,10 +193,10 @@ func TestSendCounter(t *testing.T) {
 			url:  "/unknown/Counter/PollCount/5",
 			want: want{
 				code: http.StatusNotFound,
-				metricResult: client.CountMetric{
-					Name:       "",
-					MetricType: "",
-					Value:      0,
+				metricResult: client.AgentMetrics{
+					ID:    "",
+					MType: "",
+					Delta: 0,
 				},
 			},
 		},
@@ -201,10 +205,10 @@ func TestSendCounter(t *testing.T) {
 			url:  "/unknown/Counter/PollCount/",
 			want: want{
 				code: http.StatusNotFound,
-				metricResult: client.CountMetric{
-					Name:       "",
-					MetricType: "",
-					Value:      0,
+				metricResult: client.AgentMetrics{
+					ID:    "",
+					MType: "",
+					Delta: 0,
 				},
 			},
 		},
@@ -213,10 +217,10 @@ func TestSendCounter(t *testing.T) {
 			url:  "/update/Counter",
 			want: want{
 				code: http.StatusNotFound,
-				metricResult: client.CountMetric{
-					Name:       "",
-					MetricType: "",
-					Value:      0,
+				metricResult: client.AgentMetrics{
+					ID:    "",
+					MType: "",
+					Delta: 0,
 				},
 			},
 		},
@@ -225,10 +229,10 @@ func TestSendCounter(t *testing.T) {
 			url:  "/update/Counter/PollCount/none",
 			want: want{
 				code: 400,
-				metricResult: client.CountMetric{
-					Name:       "",
-					MetricType: "",
-					Value:      0,
+				metricResult: client.AgentMetrics{
+					ID:    "",
+					MType: "",
+					Delta: 0,
 				},
 			},
 		},
@@ -237,10 +241,10 @@ func TestSendCounter(t *testing.T) {
 			url:  "/updater/Counter/PollCount/5",
 			want: want{
 				code: http.StatusNotFound,
-				metricResult: client.CountMetric{
-					Name:       "",
-					MetricType: "",
-					Value:      0,
+				metricResult: client.AgentMetrics{
+					ID:    "",
+					MType: "",
+					Delta: 0,
 				},
 			},
 		},
@@ -258,8 +262,7 @@ func TestSendCounter(t *testing.T) {
 			router.RedirectTrailingSlash = false
 			mu := sync.Mutex{}
 			storage := Storage{
-				Gauge:   make(map[string]client.GaugeMetric, 10),
-				Counter: make(map[string]client.CountMetric, 10),
+				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
 			h := NewHandler(&storage)
@@ -273,10 +276,98 @@ func TestSendCounter(t *testing.T) {
 				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
 			}
 
-			assert.Equal(t, tt.want.metricResult, storage.Counter[tt.want.metricResult.Name], "Can't save metric")
+			assert.Equal(t, tt.want.metricResult.ID, storage.Metrics[tt.want.metricResult.ID].ID, "Can't save metric")
+			assert.Equal(t, tt.want.metricResult.MType, storage.Metrics[tt.want.metricResult.ID].MType, "Can't save metric")
+			if tt.want.metricResult.Delta != 0 {
+				assert.Equal(t, tt.want.metricResult.Delta, *storage.Metrics[tt.want.metricResult.ID].Delta, "Can't save metric")
+			} else {
+				assert.Equal(t, storage.Metrics, map[string]client.Metrics{})
+			}
+			// получаем и проверяем тело запроса
+			defer res.Body.Close()
+		})
+	}
+}
+
+func TestGetMetric(t *testing.T) {
+	// определяем структуру теста
+	type want struct {
+		code     int
+		response string
+	}
+	// создаём массив тестов: имя и желаемый результат
+	tests := []struct {
+		name                string
+		url                 string
+		metricResult        client.AgentMetrics
+		counterMetricResult client.AgentMetrics
+		want                want
+	}{
+		// определяем все тесты
+		{
+			name: "[Positive] Запрос на получение метрики типа gauge с названием Alloc - получаю 200; получаю значение метрики",
+			url:  "/value/",
+			metricResult: client.AgentMetrics{
+				ID:    "Alloc",
+				MType: "Gauge",
+			},
+			want: want{
+				code:     http.StatusOK,
+				response: "5.5",
+			},
+		},
+		{
+			name: "[Negative] Запрос на получение метрики типа counter с названием PollCount - получаю 200; получаю значение метрики",
+			url:  "/value",
+			metricResult: client.AgentMetrics{
+				ID:    "PollCount",
+				MType: "Counter",
+				Value: 5,
+			},
+			want: want{
+				code:     http.StatusOK,
+				response: "5",
+			},
+		},
+	}
+	for _, tt := range tests {
+		// запускаем каждый тест
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			request.Header.Set("Content-Type", "application/json")
+			// создаём новый Recorder
+			w := httptest.NewRecorder()
+			// определяем хендлер
+			router := httprouter.New()
+			router.RedirectTrailingSlash = false
+			mu := sync.Mutex{}
+			storage := Storage{
+				Metrics: make(map[string]client.Metrics, 10),
+				Mutex:   &mu,
+			}
+			if !tt.metricResult.MetricISEmpty() {
+				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: &tt.metricResult.Value, Delta: &tt.metricResult.Delta}
+				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: &tt.metricResult.Value, Delta: &tt.metricResult.Delta}
+			}
+			if !tt.counterMetricResult.MetricISEmpty() {
+				storage.Metrics[tt.counterMetricResult.ID] = client.Metrics{ID: tt.counterMetricResult.ID, MType: tt.counterMetricResult.MType, Value: &tt.counterMetricResult.Value, Delta: &tt.counterMetricResult.Delta}
+			}
+			h := NewHandler(&storage)
+			h.Register(router)
+			// запускаем сервер
+			router.ServeHTTP(w, request)
+			res := w.Result()
+
+			// проверяем код ответа
+			if res.StatusCode != tt.want.code {
+				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
+			}
 
 			// получаем и проверяем тело запроса
 			defer res.Body.Close()
+			body, err := io.ReadAll(res.Body)
+			assert.NoError(t, err)
+			assert.Equalf(t, string(body), tt.want.response, "Не корректный ответ")
 		})
 	}
 }
@@ -289,20 +380,20 @@ func TestGetGauge(t *testing.T) {
 	}
 	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
-		name              string
-		url               string
-		gaugeMetricResult client.GaugeMetric
-		countMetricResult client.CountMetric
-		want              want
+		name                string
+		url                 string
+		metricResult        client.AgentMetrics
+		counterMetricResult client.AgentMetrics
+		want                want
 	}{
 		// определяем все тесты
 		{
 			name: "[Positive] Запрос на получение метрики типа gauge с названием Alloc - получаю 200; получаю значение метрики",
 			url:  "/value/Gauge/Alloc",
-			gaugeMetricResult: client.GaugeMetric{
-				Name:       "Alloc",
-				MetricType: "Gauge",
-				Value:      5.5,
+			metricResult: client.AgentMetrics{
+				ID:    "Alloc",
+				MType: "Gauge",
+				Value: 5.5,
 			},
 			want: want{
 				code:     http.StatusOK,
@@ -312,10 +403,10 @@ func TestGetGauge(t *testing.T) {
 		{
 			name: "[Positive] Запрос на получение метрики типа counter с названием PollCount - получаю 200; получаю значение метрики",
 			url:  "/value/Counter/PollCount",
-			countMetricResult: client.CountMetric{
-				Name:       "PollCount",
-				MetricType: "Counter",
-				Value:      5,
+			metricResult: client.AgentMetrics{
+				ID:    "PollCount",
+				MType: "Counter",
+				Value: 5,
 			},
 			want: want{
 				code:     http.StatusOK,
@@ -335,15 +426,15 @@ func TestGetGauge(t *testing.T) {
 			router.RedirectTrailingSlash = false
 			mu := sync.Mutex{}
 			storage := Storage{
-				Gauge:   make(map[string]client.GaugeMetric, 10),
-				Counter: make(map[string]client.CountMetric, 10),
+				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
-			if !tt.gaugeMetricResult.GaugeMetricISEmpty() {
-				storage.Gauge[tt.gaugeMetricResult.Name] = tt.gaugeMetricResult
+			if !tt.metricResult.MetricISEmpty() {
+				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: &tt.metricResult.Value, Delta: &tt.metricResult.Delta}
+				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: &tt.metricResult.Value, Delta: &tt.metricResult.Delta}
 			}
-			if !tt.countMetricResult.CountMetricISEmpty() {
-				storage.Counter[tt.countMetricResult.Name] = tt.countMetricResult
+			if !tt.counterMetricResult.MetricISEmpty() {
+				storage.Metrics[tt.counterMetricResult.ID] = client.Metrics{ID: tt.counterMetricResult.ID, MType: tt.counterMetricResult.MType, Value: &tt.counterMetricResult.Value, Delta: &tt.counterMetricResult.Delta}
 			}
 			h := NewHandler(&storage)
 			h.Register(router)
@@ -419,8 +510,7 @@ func TestGetMetrics(t *testing.T) {
 			router.RedirectTrailingSlash = false
 			mu := sync.Mutex{}
 			storage := Storage{
-				Gauge:   make(map[string]client.GaugeMetric, 10),
-				Counter: make(map[string]client.CountMetric, 10),
+				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
 			h := NewHandler(&storage)
@@ -450,22 +540,22 @@ func TestGetCreateResponse(t *testing.T) {
 	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
 		name              string
-		gaugeMetricResult client.GaugeMetric
-		countMetricResult client.CountMetric
+		metricResult      client.AgentMetrics
+		countMetricResult client.AgentMetrics
 		result            string
 	}{
 		// определяем все тесты
 		{
 			name: "[Positive] Проверка метода GetCreateResponse",
-			gaugeMetricResult: client.GaugeMetric{
-				Name:       "Alloc",
-				MetricType: "Gauge",
-				Value:      5.5,
+			metricResult: client.AgentMetrics{
+				ID:    "Alloc",
+				MType: "Gauge",
+				Value: 5.5,
 			},
-			countMetricResult: client.CountMetric{
-				Name:       "PollCount",
-				MetricType: "Counter",
-				Value:      5,
+			countMetricResult: client.AgentMetrics{
+				ID:    "PollCount",
+				MType: "Counter",
+				Value: 5,
 			},
 			result: "<h1><ul><li>Alloc</li><li>PollCount</li></ul></h1>",
 		},
@@ -474,14 +564,14 @@ func TestGetCreateResponse(t *testing.T) {
 		// запускаем каждый тест
 		t.Run(tt.name, func(t *testing.T) {
 			storage := Storage{
-				Gauge:   make(map[string]client.GaugeMetric, 10),
-				Counter: make(map[string]client.CountMetric, 10),
+				Metrics: make(map[string]client.Metrics, 10),
 			}
-			if !tt.gaugeMetricResult.GaugeMetricISEmpty() {
-				storage.Gauge[tt.gaugeMetricResult.Name] = tt.gaugeMetricResult
+			if !tt.metricResult.MetricISEmpty() {
+				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: &tt.metricResult.Value, Delta: &tt.metricResult.Delta}
+
 			}
-			if !tt.countMetricResult.CountMetricISEmpty() {
-				storage.Counter[tt.countMetricResult.Name] = tt.countMetricResult
+			if !tt.countMetricResult.MetricISEmpty() {
+				storage.Metrics[tt.countMetricResult.ID] = client.Metrics{ID: tt.countMetricResult.ID, MType: tt.countMetricResult.MType, Value: &tt.countMetricResult.Value, Delta: &tt.countMetricResult.Delta}
 			}
 
 			assert.Equal(t, createResponse(&storage), tt.result)

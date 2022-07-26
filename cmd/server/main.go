@@ -18,8 +18,7 @@ func main() {
 	router.RedirectTrailingSlash = false
 
 	storage := server.Storage{
-		Gauge:   make(map[string]client.GaugeMetric, 10),
-		Counter: make(map[string]client.CountMetric, 10),
+		Metrics: make(map[string]client.Metrics, 10),
 		Mutex:   &sync.Mutex{},
 	}
 

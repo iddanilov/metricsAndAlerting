@@ -18,53 +18,43 @@ const (
 func main() {
 	respClient := client.NewClient()
 	runtimeStats := runtime.MemStats{}
-	requestValue := models.RuntimeMetric{}
+	requestValue := models.AgentMetrics{}
+	var counter models.Counter
 
-	metricsChan := make(chan models.GaugeMetric, numJobs)
-	pollCountMetricsChan := make(chan models.CountMetric, 1)
+	metricsChan := make(chan []models.AgentMetrics, numJobs)
 	for w := 1; w <= numJobs; w++ {
-		go sendGaugeMetric(metricsChan, respClient)
-		go sendCountMetric(pollCountMetricsChan, respClient)
+		go sendMetrics(metricsChan, respClient)
 	}
 	reportIntervalTicker := time.NewTicker(reportInterval)
 	pollIntervalTicker := time.NewTicker(pollInterval)
 	for {
 		<-pollIntervalTicker.C
 		GetRuntimeStat(&runtimeStats)
-		metricValue := requestValue.SetMetricValue(runtimeStats)
-		log.Println(metricValue)
+		metricValue := requestValue.SetMetrics(&runtimeStats)
 
 		go func() {
 			<-reportIntervalTicker.C
 			GetRuntimeStat(&runtimeStats)
-			metricValue = requestValue.SetMetricValue(runtimeStats)
-			for _, metric := range metricValue {
-				if !metric.GaugeMetricISEmpty() {
-					metricsChan <- metric
-				}
-			}
-			pollCountMetricsChan <- requestValue.SetPollCountMetricValue()
+			metricValue = requestValue.SetMetrics(&runtimeStats)
+			metricsChan <- metricValue
+			metricsChan <- counter.SetPollCountMetricValue()
 		}()
-
 	}
 }
 
-func sendGaugeMetric(jobs <-chan models.GaugeMetric, resp *client.Client) {
+func sendMetrics(jobs <-chan []models.AgentMetrics, resp *client.Client) {
 	for j := range jobs {
-		log.Println(j)
-		err := resp.SendMetrics(j)
-		if err != nil {
-			log.Println("Err: ", err.Error())
-		}
-	}
-}
-
-func sendCountMetric(jobs <-chan models.CountMetric, resp *client.Client) {
-	for j := range jobs {
-		log.Println(j)
-		err := resp.SendPollCountMetric(j)
-		if err != nil {
-			log.Println("Err: ", err.Error())
+		for _, metrics := range j {
+			if !metrics.MetricISEmpty() {
+			}
+			err := resp.SendMetricByPath(metrics)
+			if err != nil {
+				log.Println("Err: ", err.Error())
+			}
+			err = resp.SendMetrics(metrics)
+			if err != nil {
+				log.Println("Err: ", err.Error())
+			}
 		}
 	}
 }

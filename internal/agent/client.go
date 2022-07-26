@@ -1,8 +1,12 @@
 package client
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/metricsAndAlerting/internal/models"
@@ -26,8 +30,15 @@ func NewClient() *Client {
 	}
 }
 
-func (c *Client) SendMetrics(params models.GaugeMetric) error {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.baseURL, params.MetricType, params.Name, params.Value), nil)
+func (c *Client) SendMetricByPath(params models.AgentMetrics) error {
+	var value string
+	if strings.ToLower(params.MType) == "gauge" {
+		value = strconv.FormatFloat(params.Value, 'f', 6, 64)
+	} else {
+		value = strconv.FormatInt(params.Delta, 10)
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.baseURL, params.MType, params.ID, value), nil)
 	if err != nil {
 		return err
 	}
@@ -39,8 +50,12 @@ func (c *Client) SendMetrics(params models.GaugeMetric) error {
 	return nil
 }
 
-func (c *Client) SendPollCountMetric(params models.CountMetric) error {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.baseURL, params.MetricType, params.Name, params.Value), nil)
+func (c *Client) SendMetrics(metrics models.AgentMetrics) error {
+	body, err := json.Marshal(metrics)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/", c.baseURL), bytes.NewBuffer(body))
 	if err != nil {
 		return err
 	}

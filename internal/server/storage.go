@@ -8,26 +8,25 @@ import (
 )
 
 type Storage struct {
-	Gauge   map[string]client.GaugeMetric
-	Counter map[string]client.CountMetric
+	Metrics map[string]client.Metrics
 	Mutex   *sync.Mutex
 }
 
-func (s *Storage) SaveGaugeMetric(metric client.GaugeMetric) {
+func (s *Storage) SaveMetric(metric client.Metrics) {
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
-	s.Gauge[metric.Name] = metric
+	s.Metrics[metric.ID] = metric
 }
 
-func (s *Storage) SaveCountMetric(metric client.CountMetric) {
+func (s *Storage) SaveCountMetric(metric client.Metrics) {
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
-	result, ok := s.Counter[metric.Name]
+	result, ok := s.Metrics[metric.ID]
 	if ok {
-		result.Value = result.Value + metric.Value
-		log.Println(result.Value)
-		s.Counter[metric.Name] = result
+		*result.Delta = *result.Delta + *metric.Delta
+		log.Println(result.Delta)
+		s.Metrics[metric.ID] = result
 	} else {
-		s.Counter[metric.Name] = metric
+		s.Metrics[metric.ID] = metric
 	}
 }
