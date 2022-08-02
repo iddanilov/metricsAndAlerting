@@ -25,7 +25,6 @@ func main() {
 				log.Fatal(err)
 			}
 		}
-
 	}()
 
 	r := gin.New()

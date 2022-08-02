@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	ADDRESS       *string        = flag.String("a", "127.0.0.1:8080", "help message for flagname")
+	ADDRESS       *string        = flag.String("a", "http://127.0.0.1:8080", "help message for flagname")
 	StoreFile     *string        = flag.String("f", "tmp/devops-metrics-db.json", "help message for flagname")
-	StoreInterval *time.Duration = flag.Duration("i", time.Duration(10), "help message for flagname")
+	StoreInterval *time.Duration = flag.Duration("i", time.Duration(300*time.Second), "help message for flagname")
 	RESTORE       *bool          = flag.Bool("r", true, "help message for flagname")
 )
 

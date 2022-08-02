@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"net/http"
@@ -128,8 +129,10 @@ func TestSendGauge(t *testing.T) {
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
-			h := NewHandler(&storage)
-			h.Register(router)
+			r := gin.New()
+			rg := NewRouterGroup(&r.RouterGroup, &storage)
+			rg.Routes()
+
 			// запускаем сервер
 			router.ServeHTTP(w, request)
 			res := w.Result()
@@ -266,8 +269,9 @@ func TestSendCounter(t *testing.T) {
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
-			h := NewHandler(&storage)
-			h.Register(router)
+			r := gin.New()
+			rg := NewRouterGroup(&r.RouterGroup, &storage)
+			rg.Routes()
 			// запускаем сервер
 			router.ServeHTTP(w, request)
 			res := w.Result()
@@ -353,8 +357,9 @@ func TestGetMetric(t *testing.T) {
 			if !tt.counterMetricResult.MetricISEmpty() {
 				storage.Metrics[tt.counterMetricResult.ID] = client.Metrics{ID: tt.counterMetricResult.ID, MType: tt.counterMetricResult.MType, Value: &tt.counterMetricResult.Value, Delta: &tt.counterMetricResult.Delta}
 			}
-			h := NewHandler(&storage)
-			h.Register(router)
+			r := gin.New()
+			rg := NewRouterGroup(&r.RouterGroup, &storage)
+			rg.Routes()
 			// запускаем сервер
 			router.ServeHTTP(w, request)
 			res := w.Result()
@@ -437,8 +442,9 @@ func TestGetGauge(t *testing.T) {
 			if !tt.counterMetricResult.MetricISEmpty() {
 				storage.Metrics[tt.counterMetricResult.ID] = client.Metrics{ID: tt.counterMetricResult.ID, MType: tt.counterMetricResult.MType, Value: &tt.counterMetricResult.Value, Delta: &tt.counterMetricResult.Delta}
 			}
-			h := NewHandler(&storage)
-			h.Register(router)
+			r := gin.New()
+			rg := NewRouterGroup(&r.RouterGroup, &storage)
+			rg.Routes()
 			// запускаем сервер
 			router.ServeHTTP(w, request)
 			res := w.Result()
@@ -514,8 +520,9 @@ func TestGetMetrics(t *testing.T) {
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
-			h := NewHandler(&storage)
-			h.Register(router)
+			r := gin.New()
+			rg := NewRouterGroup(&r.RouterGroup, &storage)
+			rg.Routes()
 			// запускаем сервер
 			if tt.load != nil {
 				router.ServeHTTP(w, tt.load)
