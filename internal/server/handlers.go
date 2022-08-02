@@ -45,7 +45,6 @@ func (h *routerGroup) Routes() {
 func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
-	log.Println("Get Metrics", r.URL)
 	log.Println("Get Metrics", r.Body)
 	requestBody := client.Metrics{}
 

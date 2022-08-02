@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	ADDRESS        *string        = flag.String("a", "http://127.0.0.1:8080", "help message for flagname")
+	ADDRESS        *string        = flag.String("a", "127.0.0.1:8080", "help message for flagname")
 	PollInterval   *time.Duration = flag.Duration("p", time.Duration(2*time.Second), "help message for flagname")
 	ReportInterval *time.Duration = flag.Duration("r", time.Duration(10*time.Second), "help message for flagname")
 )
@@ -40,6 +40,9 @@ func NewClient() *Client {
 	flag.Parse()
 	if cfg.ADDRESS == "" {
 		cfg.ADDRESS = *ADDRESS
+	}
+	if strings.Contains(cfg.ADDRESS, "http") {
+		cfg.ADDRESS = "http://" + cfg.ADDRESS
 	}
 	if cfg.ReportInterval == 0 {
 		cfg.ReportInterval = *ReportInterval
