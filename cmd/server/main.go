@@ -14,10 +14,8 @@ func main() {
 	log.Println("create router")
 
 	cfg := server.NewConfig()
-
 	router := httprouter.New()
 	router.RedirectTrailingSlash = false
-
 	storage := server.NewStorages(cfg)
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
