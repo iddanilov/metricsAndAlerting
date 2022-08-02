@@ -46,12 +46,15 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	log.Println("Get Metrics", r.URL)
+	log.Println("Get Metrics", r.Body)
 	requestBody := client.Metrics{}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, err
 	}
+	log.Println("Get Metrics", requestBody)
+
 	if requestBody.ID == "" {
 		return nil, middleware.ErrNotFound
 	}
