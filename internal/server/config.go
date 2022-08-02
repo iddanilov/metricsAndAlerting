@@ -1,16 +1,53 @@
 package server
 
-import "github.com/caarlos0/env/v6"
+import (
+	goflag "flag"
+	"log"
+	"os"
+	"time"
+
+	"github.com/caarlos0/env/v6"
+	flag "github.com/spf13/pflag"
+)
+
+var (
+	ADDRESS       *string        = flag.String("a", "127.0.0.1:8080", "help message for flagname")
+	StoreFile     *string        = flag.String("f", "tmp/devops-metrics-db.json", "help message for flagname")
+	StoreInterval *time.Duration = flag.Duration("i", time.Duration(10), "help message for flagname")
+	RESTORE       *bool          = flag.Bool("r", true, "help message for flagname")
+)
 
 type Config struct {
-	ADDRESS string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
+	ADDRESS       string        `env:"ADDRESS"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL"`
+	StoreFile     string        `env:"STORE_FILE"`
+	RESTORE       bool          `env:"RESTORE"`
 }
 
 func NewConfig() *Config {
 	var cfg Config
+
 	err := env.Parse(&cfg)
+	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+	flag.Parse()
+
+	if cfg.ADDRESS == "" {
+		cfg.ADDRESS = *ADDRESS
+	}
+	if cfg.StoreInterval == 0 {
+		cfg.StoreInterval = *StoreInterval
+	}
+	if cfg.StoreFile == "" {
+		cfg.StoreFile = *StoreFile
+	}
+	if os.Getenv("RESTORE") == "" {
+		cfg.RESTORE = *RESTORE
+	}
+
+	log.Println(cfg.ADDRESS)
+	log.Println(cfg)
 	if err != nil {
-		return nil
+		log.Fatal(err)
 	}
 	return &cfg
 

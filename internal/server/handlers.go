@@ -45,47 +45,43 @@ func (h *handler) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodGet, metricsName, middleware.Middleware(h.GetMetricsName))
 }
 
-func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) error {
+func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	log.Println("Get Metrics", r.URL)
 	requestBody := client.Metrics{}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
+		return nil, err
 	}
 	if requestBody.ID == "" {
-		return middleware.ErrNotFound
+		return nil, middleware.ErrNotFound
 	}
 	response, ok := h.storage.Metrics[requestBody.ID]
 	if !ok {
-		return middleware.ErrNotFound
+		return nil, middleware.ErrNotFound
 	}
 	w.Header().Set("Content-Type", "application/json")
 	body, err := json.Marshal(response)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	_, err = w.Write(body)
-	if err != nil {
-		return err
-	}
-	return err
+	return body, err
 }
 
-func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error {
+func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	log.Println("Get Metrics", r.URL)
 	var response []byte
 	urlValues := strings.Split(r.URL.Path, "/")
 	if len(urlValues) < 4 {
 		w.WriteHeader(http.StatusNotFound)
-		return middleware.ErrNotFound
+		return nil, middleware.ErrNotFound
 	}
 
 	if strings.ToLower(urlValues[2]) == "gauge" {
 		result, ok := h.storage.Metrics[urlValues[3]]
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
-			return middleware.ErrNotFound
+			return nil, middleware.ErrNotFound
 		}
 
 		response = []byte(fmt.Sprintf("%v", *result.Value))
@@ -94,42 +90,38 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) error 
 		result, ok := h.storage.Metrics[urlValues[3]]
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
-			return middleware.ErrNotFound
+			return nil, middleware.ErrNotFound
 		}
 
 		response = []byte(fmt.Sprintf("%v", *result.Delta))
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusNotFound)
-		return middleware.ErrNotFound
+		return nil, middleware.ErrNotFound
 	}
 
-	_, err := w.Write(response)
-
-	return err
+	return response, nil
 }
 
-func (h *handler) GetMetricsName(w http.ResponseWriter, r *http.Request) error {
-	w.WriteHeader(http.StatusOK)
-	_, err := w.Write([]byte(createResponse(h.storage)))
-	return err
+func (h *handler) GetMetricsName(w http.ResponseWriter, r *http.Request) ([]byte, error) {
+	return []byte(createResponse(h.storage)), nil
 }
 
-func (h *handler) UpdateMetricsByPath(w http.ResponseWriter, r *http.Request) error {
+func (h *handler) UpdateMetricsByPath(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	log.Println("UpdateMetricsByPath Metrics", r.URL)
 	urlValue := strings.Split(r.URL.Path, "/")
 	if len(urlValue) < 5 {
 		w.WriteHeader(http.StatusNotFound)
-		return middleware.ErrNotFound
+		return nil, middleware.ErrNotFound
 	}
 
 	if strings.ToLower(urlValue[2]) == "gauge" {
 		v, err := strconv.ParseFloat(urlValue[4], 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", urlValue[3]))
+			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", urlValue[3]))
 		}
-		h.storage.SaveMetric(client.Metrics{
+		h.storage.SaveGaugeMetric(&client.Metrics{
 			ID:    urlValue[3],
 			MType: "Gauge",
 			Value: &v,
@@ -138,7 +130,7 @@ func (h *handler) UpdateMetricsByPath(w http.ResponseWriter, r *http.Request) er
 		v, err := strconv.ParseInt(urlValue[4], 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			return middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", urlValue[3]))
+			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", urlValue[3]))
 		}
 		h.storage.SaveCountMetric(client.Metrics{
 			ID:    urlValue[3],
@@ -147,31 +139,31 @@ func (h *handler) UpdateMetricsByPath(w http.ResponseWriter, r *http.Request) er
 		})
 	} else {
 		w.WriteHeader(501)
-		return middleware.ErrNotFound
+		return nil, middleware.ErrNotFound
 	}
 
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte{})
 	if err != nil {
 		log.Println("Write err: ", err.Error())
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
-func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
+func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 	log.Println("UpdateMetrics Metrics", r.URL)
 
 	requestBody := client.Metrics{}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return err
+		return nil, err
 	}
 
 	if strings.ToLower(requestBody.MType) == "gauge" {
-		h.storage.SaveMetric(client.Metrics{
+		h.storage.SaveGaugeMetric(&client.Metrics{
 			ID:    requestBody.ID,
 			MType: requestBody.MType,
 			Value: requestBody.Value,
@@ -184,17 +176,11 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) error {
 		})
 	} else {
 		w.WriteHeader(501)
-		return middleware.ErrNotFound
+		return nil, middleware.ErrNotFound
 	}
-
 	w.WriteHeader(http.StatusOK)
-	_, err := w.Write([]byte{})
-	if err != nil {
-		log.Println("Write err: ", err.Error())
-		return err
-	}
 
-	return nil
+	return nil, nil
 }
 
 func createResponse(s *Storage) string {

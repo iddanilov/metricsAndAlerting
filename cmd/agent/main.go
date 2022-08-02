@@ -14,10 +14,10 @@ const numJobs = 25
 func main() {
 	respClient := client.NewClient()
 	runtimeStats := runtime.MemStats{}
-	requestValue := models.AgentMetrics{}
+	requestValue := models.Metrics{}
 	var counter models.Counter
 
-	metricsChan := make(chan []models.AgentMetrics, numJobs)
+	metricsChan := make(chan []models.Metrics, numJobs)
 	for w := 1; w <= numJobs; w++ {
 		go sendMetrics(metricsChan, respClient)
 	}
@@ -38,7 +38,7 @@ func main() {
 	}
 }
 
-func sendMetrics(jobs <-chan []models.AgentMetrics, resp *client.Client) {
+func sendMetrics(jobs <-chan []models.Metrics, resp *client.Client) {
 	for j := range jobs {
 		for _, metrics := range j {
 			if !metrics.MetricISEmpty() {

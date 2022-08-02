@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	goflag "flag"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -10,14 +11,21 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v6"
+	flag "github.com/spf13/pflag"
 
 	"github.com/metricsAndAlerting/internal/models"
 )
 
+var (
+	ADDRESS        *string        = flag.String("a", "http://127.0.0.1:8080", "help message for flagname")
+	PollInterval   *time.Duration = flag.Duration("p", time.Duration(2*time.Second), "help message for flagname")
+	ReportInterval *time.Duration = flag.Duration("r", time.Duration(10*time.Second), "help message for flagname")
+)
+
 type Config struct {
-	ADDRESS        string        `env:"ADDRESS" envDefault:"http://127.0.0.1:8080"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
-	PollInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
+	ADDRESS        string        `env:"ADDRESS"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL"`
 }
 
 type Client struct {
@@ -28,6 +36,18 @@ type Client struct {
 func NewClient() *Client {
 	var cfg Config
 	err := env.Parse(&cfg)
+	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+	flag.Parse()
+	if cfg.ADDRESS == "" {
+		cfg.ADDRESS = *ADDRESS
+	}
+	if cfg.ReportInterval == 0 {
+		cfg.ReportInterval = *ReportInterval
+	}
+	if cfg.PollInterval == 0 {
+		cfg.PollInterval = *PollInterval
+	}
+
 	if err != nil {
 		return nil
 	}
@@ -39,12 +59,12 @@ func NewClient() *Client {
 	}
 }
 
-func (c *Client) SendMetricByPath(params models.AgentMetrics) error {
+func (c *Client) SendMetricByPath(params models.Metrics) error {
 	var value string
 	if strings.ToLower(params.MType) == "gauge" {
-		value = strconv.FormatFloat(params.Value, 'f', 6, 64)
+		value = strconv.FormatFloat(*params.Value, 'f', 6, 64)
 	} else {
-		value = strconv.FormatInt(params.Delta, 10)
+		value = strconv.FormatInt(*params.Delta, 10)
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.Config.ADDRESS, params.MType, params.ID, value), nil)
@@ -59,7 +79,7 @@ func (c *Client) SendMetricByPath(params models.AgentMetrics) error {
 	return nil
 }
 
-func (c *Client) SendMetrics(metrics models.AgentMetrics) error {
+func (c *Client) SendMetrics(metrics models.Metrics) error {
 	body, err := json.Marshal(metrics)
 	if err != nil {
 		return err

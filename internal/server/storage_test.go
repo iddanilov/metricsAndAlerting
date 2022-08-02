@@ -37,7 +37,7 @@ func TestSaveGaugeMetric(t *testing.T) {
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
-			storage.SaveMetric(tt.gaugeMetricResult)
+			storage.SaveGaugeMetric(&tt.gaugeMetricResult)
 
 			assert.Equal(t, tt.gaugeMetricResult, storage.Metrics[tt.gaugeMetricResult.ID])
 

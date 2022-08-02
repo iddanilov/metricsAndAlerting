@@ -39,8 +39,8 @@ var gaugeMetric = [...]string{
 	"StackSys", "Sys", "TotalAlloc", "RandomValue",
 }
 
-func (*AgentMetrics) SetMetrics(runtimeStat *runtime.MemStats) []AgentMetrics {
-	var result []AgentMetrics
+func (*Metrics) SetMetrics(runtimeStat *runtime.MemStats) []Metrics {
+	var result []Metrics
 	v := reflect.ValueOf(*runtimeStat)
 	for _, s := range gaugeMetric {
 		var value float64
@@ -54,22 +54,23 @@ func (*AgentMetrics) SetMetrics(runtimeStat *runtime.MemStats) []AgentMetrics {
 				value = v.FieldByName(s).Float()
 			}
 		}
-		result = append(result, AgentMetrics{
+		result = append(result, Metrics{
 			ID:    s,
 			MType: "Gauge",
-			Value: value,
+			Value: &value,
 		})
 	}
 	return result
 }
 
-func (c *Counter) SetPollCountMetricValue() []AgentMetrics {
+func (c *Counter) SetPollCountMetricValue() []Metrics {
 	*c++
+	value := int64(*c)
 	log.Println(*c)
-	return []AgentMetrics{{
+	return []Metrics{{
 		ID:    "PollCount",
 		MType: "Counter",
-		Delta: int64(*c),
+		Delta: &value,
 	},
 	}
 }
