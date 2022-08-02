@@ -36,15 +36,22 @@ func Middleware(h appHandler) gin.HandlerFunc {
 						w.WriteHeader(http.StatusInternalServerError)
 					}
 					return
+				} else if errors.Is(err, UnknownMetricName) {
+					w.WriteHeader(http.StatusNotImplemented)
+					_, err := w.Write(UnknownMetricName.Marshal())
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+					}
+					return
 				}
+
 				err = err.(*AppError)
 				w.WriteHeader(http.StatusBadRequest)
 				w.Write(ErrNotFound.Marshal())
 			}
 			w.WriteHeader(http.StatusTeapot)
 			w.Write(systemError(err).Marshal())
-		}
-		if body != nil {
+		} else if body != nil {
 			if strings.Contains(r.Header.Get(`Accept-Encoding`), `gzip`) {
 				gz := gzip.NewWriter(w)
 				defer gz.Close()

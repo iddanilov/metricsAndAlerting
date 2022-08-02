@@ -141,8 +141,7 @@ func (h *routerGroup) UpdateMetricsByPath(c *gin.Context) ([]byte, error) {
 			Delta: &v,
 		})
 	} else {
-		w.WriteHeader(501)
-		return nil, middleware.ErrNotFound
+		return nil, middleware.UnknownMetricName
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -180,7 +179,7 @@ func (h *routerGroup) UpdateMetrics(c *gin.Context) ([]byte, error) {
 			Delta: requestBody.Delta,
 		})
 	} else {
-		w.WriteHeader(501)
+		w.WriteHeader(http.StatusNotImplemented)
 		return nil, middleware.ErrNotFound
 	}
 	w.WriteHeader(http.StatusOK)

@@ -2,7 +2,10 @@ package middleware
 
 import "encoding/json"
 
-var ErrNotFound = NewAppError(nil, "not found")
+var (
+	ErrNotFound       = NewAppError(nil, "not found")
+	UnknownMetricName = NewAppError(nil, "unknown metric name")
+)
 
 type AppError struct {
 	Err     error  `json:"_,omitempty"`
