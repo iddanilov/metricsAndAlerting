@@ -10,7 +10,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
 
 	client "github.com/metricsAndAlerting/internal/models"
@@ -122,19 +121,18 @@ func TestSendGauge(t *testing.T) {
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			// определяем хендлер
-			router := httprouter.New()
-			router.RedirectTrailingSlash = false
 			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
 			r := gin.New()
+			r.RedirectTrailingSlash = false
 			rg := NewRouterGroup(&r.RouterGroup, &storage)
 			rg.Routes()
 
 			// запускаем сервер
-			router.ServeHTTP(w, request)
+			r.ServeHTTP(w, request)
 			res := w.Result()
 
 			// проверяем код ответа
@@ -262,18 +260,18 @@ func TestSendCounter(t *testing.T) {
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			// определяем хендлер
-			router := httprouter.New()
-			router.RedirectTrailingSlash = false
 			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
 			r := gin.New()
+			r.RedirectTrailingSlash = false
 			rg := NewRouterGroup(&r.RouterGroup, &storage)
 			rg.Routes()
+
 			// запускаем сервер
-			router.ServeHTTP(w, request)
+			r.ServeHTTP(w, request)
 			res := w.Result()
 
 			// проверяем код ответа
@@ -344,8 +342,6 @@ func TestGetMetric(t *testing.T) {
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			// определяем хендлер
-			router := httprouter.New()
-			router.RedirectTrailingSlash = false
 			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
@@ -358,10 +354,12 @@ func TestGetMetric(t *testing.T) {
 				storage.Metrics[tt.counterMetricResult.ID] = client.Metrics{ID: tt.counterMetricResult.ID, MType: tt.counterMetricResult.MType, Value: &tt.counterMetricResult.Value, Delta: &tt.counterMetricResult.Delta}
 			}
 			r := gin.New()
+			r.RedirectTrailingSlash = false
 			rg := NewRouterGroup(&r.RouterGroup, &storage)
 			rg.Routes()
+
 			// запускаем сервер
-			router.ServeHTTP(w, request)
+			r.ServeHTTP(w, request)
 			res := w.Result()
 
 			// проверяем код ответа
@@ -428,8 +426,6 @@ func TestGetGauge(t *testing.T) {
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			// определяем хендлер
-			router := httprouter.New()
-			router.RedirectTrailingSlash = false
 			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
@@ -443,10 +439,12 @@ func TestGetGauge(t *testing.T) {
 				storage.Metrics[tt.counterMetricResult.ID] = client.Metrics{ID: tt.counterMetricResult.ID, MType: tt.counterMetricResult.MType, Value: &tt.counterMetricResult.Value, Delta: &tt.counterMetricResult.Delta}
 			}
 			r := gin.New()
+			r.RedirectTrailingSlash = false
 			rg := NewRouterGroup(&r.RouterGroup, &storage)
 			rg.Routes()
+
 			// запускаем сервер
-			router.ServeHTTP(w, request)
+			r.ServeHTTP(w, request)
 			res := w.Result()
 
 			// проверяем код ответа
@@ -513,21 +511,22 @@ func TestGetMetrics(t *testing.T) {
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			// определяем хендлер
-			router := httprouter.New()
-			router.RedirectTrailingSlash = false
 			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
 			r := gin.New()
+			r.RedirectTrailingSlash = false
 			rg := NewRouterGroup(&r.RouterGroup, &storage)
 			rg.Routes()
+
+			// запускаем сервер
 			// запускаем сервер
 			if tt.load != nil {
-				router.ServeHTTP(w, tt.load)
+				r.ServeHTTP(w, tt.load)
 			}
-			router.ServeHTTP(w, request)
+			r.ServeHTTP(w, request)
 			res := w.Result()
 
 			// проверяем код ответа

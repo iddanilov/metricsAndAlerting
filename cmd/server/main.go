@@ -28,6 +28,7 @@ func main() {
 	}()
 
 	r := gin.New()
+	r.RedirectTrailingSlash = false
 
 	rg := server.NewRouterGroup(&r.RouterGroup, storage)
 	rg.Routes()
