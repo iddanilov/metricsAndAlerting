@@ -2,10 +2,9 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/gin-gonic/gin"
 
 	"github.com/metricsAndAlerting/internal/server"
 )
@@ -14,8 +13,6 @@ func main() {
 	log.Println("create router")
 
 	cfg := server.NewConfig()
-	router := httprouter.New()
-	router.RedirectTrailingSlash = false
 	storage := server.NewStorages(cfg)
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
@@ -31,16 +28,10 @@ func main() {
 
 	}()
 
-	log.Println("register service handler")
-	handler := server.NewHandler(storage)
-	handler.Register(router)
+	r := gin.New()
 
-	s := &http.Server{
-		Addr:         cfg.ADDRESS,
-		Handler:      router,
-		WriteTimeout: 5 * time.Second,
-		ReadTimeout:  5 * time.Second,
-	}
+	rg := server.NewRouterGroup(&r.RouterGroup, storage)
+	rg.Routes()
 
-	log.Fatal(s.ListenAndServe())
+	r.Run(cfg.ADDRESS)
 }

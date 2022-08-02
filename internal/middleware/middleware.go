@@ -5,12 +5,17 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
-type appHandler func(w http.ResponseWriter, r *http.Request) ([]byte, error)
+type appHandler func(context *gin.Context) ([]byte, error)
 
-func Middleware(h appHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func Middleware(h appHandler) gin.HandlerFunc {
+	return func(context *gin.Context) {
+		r := context.Request
+		w := context.Writer
+
 		if r.Header.Get(`Content-Encoding`) == `gzip` {
 			gz, err := gzip.NewReader(r.Body)
 			if err != nil {
@@ -21,7 +26,7 @@ func Middleware(h appHandler) http.HandlerFunc {
 			defer gz.Close()
 		}
 		var appErr *AppError
-		body, err := h(w, r)
+		body, err := h(context)
 		if err != nil {
 			if errors.As(err, &appErr) {
 				if errors.Is(err, ErrNotFound) {

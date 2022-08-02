@@ -3,14 +3,12 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/julienschmidt/httprouter"
-
-	"github.com/metricsAndAlerting/internal/handlers"
 	"github.com/metricsAndAlerting/internal/middleware"
 	client "github.com/metricsAndAlerting/internal/models"
 )
@@ -23,29 +21,30 @@ const (
 	metricsName  = "/"
 )
 
-type RequestBody struct {
-	URL string `json:"url"`
+type routerGroup struct {
+	rg *gin.RouterGroup
+	s  *Storage
 }
 
-type handler struct {
-	storage *Storage
-}
-
-func NewHandler(storage *Storage) handlers.Handler {
-	return &handler{
-		storage: storage,
+func NewRouterGroup(rg *gin.RouterGroup, s *Storage) *routerGroup {
+	return &routerGroup{
+		rg: rg,
+		s:  s,
 	}
 }
 
-func (h *handler) Register(router *httprouter.Router) {
-	router.HandlerFunc(http.MethodPost, updateByPath, middleware.Middleware(h.UpdateMetricsByPath))
-	router.HandlerFunc(http.MethodPost, update, middleware.Middleware(h.UpdateMetrics))
-	router.HandlerFunc(http.MethodPost, value, middleware.Middleware(h.GetMetric))
-	router.HandlerFunc(http.MethodGet, valueByPath, middleware.Middleware(h.GetMetricByName))
-	router.HandlerFunc(http.MethodGet, metricsName, middleware.Middleware(h.GetMetricsName))
+func (h *routerGroup) Routes() {
+	h.rg.POST(updateByPath, middleware.Middleware(h.UpdateMetricsByPath))
+	h.rg.POST(update, middleware.Middleware(h.UpdateMetrics))
+	h.rg.GET(value, middleware.Middleware(h.GetMetricByName))
+	h.rg.POST(value, middleware.Middleware(h.GetMetric))
+	h.rg.GET(valueByPath, middleware.Middleware(h.GetMetricByName))
+	h.rg.GET(metricsName, middleware.Middleware(h.GetMetricsName))
 }
 
-func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) ([]byte, error) {
+func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
+	r := c.Request
+	w := c.Writer
 	log.Println("Get Metrics", r.URL)
 	requestBody := client.Metrics{}
 
@@ -56,7 +55,7 @@ func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) ([]byte, err
 	if requestBody.ID == "" {
 		return nil, middleware.ErrNotFound
 	}
-	response, ok := h.storage.Metrics[requestBody.ID]
+	response, ok := h.s.Metrics[requestBody.ID]
 	if !ok {
 		return nil, middleware.ErrNotFound
 	}
@@ -68,7 +67,9 @@ func (h *handler) GetMetric(w http.ResponseWriter, r *http.Request) ([]byte, err
 	return body, err
 }
 
-func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) ([]byte, error) {
+func (h *routerGroup) GetMetricByName(c *gin.Context) ([]byte, error) {
+	r := c.Request
+	w := c.Writer
 	log.Println("Get Metrics", r.URL)
 	var response []byte
 	urlValues := strings.Split(r.URL.Path, "/")
@@ -78,7 +79,7 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) ([]byt
 	}
 
 	if strings.ToLower(urlValues[2]) == "gauge" {
-		result, ok := h.storage.Metrics[urlValues[3]]
+		result, ok := h.s.Metrics[urlValues[3]]
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
@@ -87,7 +88,7 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) ([]byt
 		response = []byte(fmt.Sprintf("%v", *result.Value))
 		w.WriteHeader(http.StatusOK)
 	} else if strings.ToLower(urlValues[2]) == "counter" {
-		result, ok := h.storage.Metrics[urlValues[3]]
+		result, ok := h.s.Metrics[urlValues[3]]
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
@@ -103,11 +104,13 @@ func (h *handler) GetMetricByName(w http.ResponseWriter, r *http.Request) ([]byt
 	return response, nil
 }
 
-func (h *handler) GetMetricsName(w http.ResponseWriter, r *http.Request) ([]byte, error) {
-	return []byte(createResponse(h.storage)), nil
+func (h *routerGroup) GetMetricsName(c *gin.Context) ([]byte, error) {
+	return []byte(createResponse(h.s)), nil
 }
 
-func (h *handler) UpdateMetricsByPath(w http.ResponseWriter, r *http.Request) ([]byte, error) {
+func (h *routerGroup) UpdateMetricsByPath(c *gin.Context) ([]byte, error) {
+	r := c.Request
+	w := c.Writer
 	log.Println("UpdateMetricsByPath Metrics", r.URL)
 	urlValue := strings.Split(r.URL.Path, "/")
 	if len(urlValue) < 5 {
@@ -121,7 +124,7 @@ func (h *handler) UpdateMetricsByPath(w http.ResponseWriter, r *http.Request) ([
 			w.WriteHeader(http.StatusBadRequest)
 			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", urlValue[3]))
 		}
-		h.storage.SaveGaugeMetric(&client.Metrics{
+		h.s.SaveGaugeMetric(&client.Metrics{
 			ID:    urlValue[3],
 			MType: "Gauge",
 			Value: &v,
@@ -132,7 +135,7 @@ func (h *handler) UpdateMetricsByPath(w http.ResponseWriter, r *http.Request) ([
 			w.WriteHeader(http.StatusBadRequest)
 			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", urlValue[3]))
 		}
-		h.storage.SaveCountMetric(client.Metrics{
+		h.s.SaveCountMetric(client.Metrics{
 			ID:    urlValue[3],
 			MType: "Counter",
 			Delta: &v,
@@ -152,7 +155,9 @@ func (h *handler) UpdateMetricsByPath(w http.ResponseWriter, r *http.Request) ([
 	return nil, nil
 }
 
-func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) ([]byte, error) {
+func (h *routerGroup) UpdateMetrics(c *gin.Context) ([]byte, error) {
+	r := c.Request
+	w := c.Writer
 	log.Println("UpdateMetrics Metrics", r.URL)
 
 	requestBody := client.Metrics{}
@@ -163,13 +168,13 @@ func (h *handler) UpdateMetrics(w http.ResponseWriter, r *http.Request) ([]byte,
 	}
 
 	if strings.ToLower(requestBody.MType) == "gauge" {
-		h.storage.SaveGaugeMetric(&client.Metrics{
+		h.s.SaveGaugeMetric(&client.Metrics{
 			ID:    requestBody.ID,
 			MType: requestBody.MType,
 			Value: requestBody.Value,
 		})
 	} else if strings.ToLower(requestBody.MType) == "counter" {
-		h.storage.SaveCountMetric(client.Metrics{
+		h.s.SaveCountMetric(client.Metrics{
 			ID:    requestBody.ID,
 			MType: "Counter",
 			Delta: requestBody.Delta,
