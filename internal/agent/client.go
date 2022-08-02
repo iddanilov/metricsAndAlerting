@@ -41,7 +41,7 @@ func NewClient() *Client {
 	if cfg.ADDRESS == "" {
 		cfg.ADDRESS = *ADDRESS
 	}
-	if strings.Contains(cfg.ADDRESS, "http") {
+	if !strings.Contains(cfg.ADDRESS, "http") {
 		cfg.ADDRESS = "http://" + cfg.ADDRESS
 	}
 	if cfg.ReportInterval == 0 {
