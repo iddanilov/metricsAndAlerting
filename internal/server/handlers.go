@@ -14,11 +14,9 @@ import (
 )
 
 const (
-	updateByPath = "/update/:type/:name/:value"
-	update       = "/update/"
-	value        = "/value/"
-	valueByPath  = "/value/:type/:name"
-	metricsName  = "/"
+	update      = "/update/"
+	value       = "/value/"
+	metricsName = "/"
 )
 
 type routerGroup struct {
@@ -34,12 +32,18 @@ func NewRouterGroup(rg *gin.RouterGroup, s *Storage) *routerGroup {
 }
 
 func (h *routerGroup) Routes() {
-	h.rg.POST(updateByPath, middleware.Middleware(h.UpdateMetricsByPath))
-	h.rg.POST(update, middleware.Middleware(h.UpdateMetric))
+	group := h.rg.Group("/")
+	group.Use()
+	{
+		group.GET("/", middleware.Middleware(h.MetricList))
+		group.POST("/update/:type/:name/:value", middleware.Middleware(h.UpdateMetricsByPath))
+		group.POST(update, middleware.Middleware(h.UpdateMetric))
+		group.POST(value, middleware.Middleware(h.GetMetric))
+		group.GET("/value/:type/:name", middleware.Middleware(h.GetMetricByPath))
+	}
+
 	//h.rg.GET(value, middleware.Middleware(h.GetMetricByPath))
-	h.rg.POST(value, middleware.Middleware(h.GetMetric))
-	h.rg.GET(valueByPath, middleware.Middleware(h.GetMetricByPath))
-	h.rg.GET(metricsName, middleware.Middleware(h.MetricList))
+
 }
 
 func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
@@ -77,15 +81,22 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	log.Println("Get Metrics", r.URL)
-	var response []byte
-	urlValues := strings.Split(r.URL.Path, "/")
-	if len(urlValues) < 4 {
+	mType := c.Params.ByName("type")
+	name := c.Params.ByName("name")
+	if mType == "" || name == "" {
 		w.WriteHeader(http.StatusNotFound)
 		return nil, middleware.ErrNotFound
 	}
 
-	if strings.ToLower(urlValues[2]) == "gauge" {
-		result, ok := h.s.Metrics[urlValues[3]]
+	var response []byte
+	//urlValues := strings.Split(r.URL.Path, "/")
+	//if len(urlValues) < 4 {
+	//	w.WriteHeader(http.StatusNotFound)
+	//	return nil, middleware.ErrNotFound
+	//}
+
+	if strings.ToLower(mType) == "gauge" {
+		result, ok := h.s.Metrics[name]
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
@@ -93,8 +104,8 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 
 		response = []byte(fmt.Sprintf("%v", *result.Value))
 		w.WriteHeader(http.StatusOK)
-	} else if strings.ToLower(urlValues[2]) == "counter" {
-		result, ok := h.s.Metrics[urlValues[3]]
+	} else if strings.ToLower(mType) == "counter" {
+		result, ok := h.s.Metrics[name]
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
@@ -118,33 +129,35 @@ func (h *routerGroup) MetricList(c *gin.Context) ([]byte, error) {
 func (h *routerGroup) UpdateMetricsByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
-	log.Println("UpdateMetricsByPath Metrics", r.URL)
-	urlValue := strings.Split(r.URL.Path, "/")
-	if len(urlValue) < 5 {
+	mType := c.Params.ByName("type")
+	name := c.Params.ByName("name")
+	mValue := c.Params.ByName("value")
+	if mType == "" || name == "" || mValue == "" {
 		w.WriteHeader(http.StatusNotFound)
 		return nil, middleware.ErrNotFound
 	}
+	log.Println("UpdateMetricsByPath Metrics", r.URL)
 
-	if strings.ToLower(urlValue[2]) == "gauge" {
-		v, err := strconv.ParseFloat(urlValue[4], 64)
+	if strings.ToLower(mType) == "gauge" {
+		v, err := strconv.ParseFloat(mValue, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", urlValue[3]))
+			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", mType))
 		}
 		h.s.SaveGaugeMetric(&client.Metrics{
-			ID:    urlValue[3],
-			MType: "Gauge",
+			ID:    name,
+			MType: mType,
 			Value: &v,
 		})
-	} else if strings.ToLower(urlValue[2]) == "counter" {
-		v, err := strconv.ParseInt(urlValue[4], 10, 64)
+	} else if strings.ToLower(mType) == "counter" {
+		v, err := strconv.ParseInt(mValue, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", urlValue[3]))
+			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", mValue))
 		}
 		h.s.SaveCountMetric(client.Metrics{
-			ID:    urlValue[3],
-			MType: "Counter",
+			ID:    name,
+			MType: mType,
 			Delta: &v,
 		})
 	} else {
