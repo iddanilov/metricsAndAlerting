@@ -36,7 +36,7 @@ func NewRouterGroup(rg *gin.RouterGroup, s *Storage) *routerGroup {
 func (h *routerGroup) Routes() {
 	h.rg.POST(updateByPath, middleware.Middleware(h.UpdateMetricsByPath))
 	h.rg.POST(update, middleware.Middleware(h.UpdateMetrics))
-	h.rg.GET(value, middleware.Middleware(h.GetMetricByName))
+	//h.rg.GET(value, middleware.Middleware(h.GetMetricByName))
 	h.rg.POST(value, middleware.Middleware(h.GetMetric))
 	h.rg.GET(valueByPath, middleware.Middleware(h.GetMetricByName))
 	h.rg.GET(metricsName, middleware.Middleware(h.GetMetricsName))
@@ -66,7 +66,10 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Println("Get Metrics", body)
+
 	return body, err
+
 }
 
 func (h *routerGroup) GetMetricByName(c *gin.Context) ([]byte, error) {
@@ -107,6 +110,7 @@ func (h *routerGroup) GetMetricByName(c *gin.Context) ([]byte, error) {
 }
 
 func (h *routerGroup) GetMetricsName(c *gin.Context) ([]byte, error) {
+	c.Writer.Header().Set("Content-Type", "text/html")
 	return []byte(createResponse(h.s)), nil
 }
 
