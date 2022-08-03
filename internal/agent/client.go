@@ -17,9 +17,9 @@ import (
 )
 
 var (
-	ADDRESS        *string        = flag.String("a", "127.0.0.1:8080", "help message for flagname")
-	PollInterval   *time.Duration = flag.Duration("p", time.Duration(2*time.Second), "help message for flagname")
-	ReportInterval *time.Duration = flag.Duration("r", time.Duration(10*time.Second), "help message for flagname")
+	ADDRESS        *string        = flag.StringP("a", "a", "127.0.0.1:8080", "help message for flagname")
+	PollInterval   *time.Duration = flag.DurationP("p", "p", time.Duration(2*time.Second), "help message for flagname")
+	ReportInterval *time.Duration = flag.DurationP("r", "r", time.Duration(10*time.Second), "help message for flagname")
 )
 
 type Config struct {
