@@ -66,7 +66,7 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Get Metrics", body)
+	log.Println("Get Metrics", string(body))
 
 	return body, err
 
