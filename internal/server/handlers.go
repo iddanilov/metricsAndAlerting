@@ -132,7 +132,7 @@ func (h *routerGroup) UpdateMetricsByPath(c *gin.Context) ([]byte, error) {
 		}
 		h.s.SaveGaugeMetric(&client.Metrics{
 			ID:    urlValue[3],
-			MType: "Gauge",
+			MType: "gauge",
 			Value: &v,
 		})
 	} else if strings.ToLower(urlValue[2]) == "counter" {
@@ -143,7 +143,7 @@ func (h *routerGroup) UpdateMetricsByPath(c *gin.Context) ([]byte, error) {
 		}
 		h.s.SaveCountMetric(client.Metrics{
 			ID:    urlValue[3],
-			MType: "Counter",
+			MType: "counter",
 			Delta: &v,
 		})
 	} else {
