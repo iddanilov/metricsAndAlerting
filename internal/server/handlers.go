@@ -35,11 +35,11 @@ func NewRouterGroup(rg *gin.RouterGroup, s *Storage) *routerGroup {
 
 func (h *routerGroup) Routes() {
 	h.rg.POST(updateByPath, middleware.Middleware(h.UpdateMetricsByPath))
-	h.rg.POST(update, middleware.Middleware(h.UpdateMetrics))
-	//h.rg.GET(value, middleware.Middleware(h.GetMetricByName))
+	h.rg.POST(update, middleware.Middleware(h.UpdateMetric))
+	//h.rg.GET(value, middleware.Middleware(h.GetMetricByPath))
 	h.rg.POST(value, middleware.Middleware(h.GetMetric))
-	h.rg.GET(valueByPath, middleware.Middleware(h.GetMetricByName))
-	h.rg.GET(metricsName, middleware.Middleware(h.GetMetricsName))
+	h.rg.GET(valueByPath, middleware.Middleware(h.GetMetricByPath))
+	h.rg.GET(metricsName, middleware.Middleware(h.MetricList))
 }
 
 func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
@@ -58,6 +58,7 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 		return nil, middleware.ErrNotFound
 	}
 	response, ok := h.s.Metrics[requestBody.ID]
+	response.MType = strings.ToLower(response.MType)
 	if !ok {
 		return nil, middleware.ErrNotFound
 	}
@@ -72,7 +73,7 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 
 }
 
-func (h *routerGroup) GetMetricByName(c *gin.Context) ([]byte, error) {
+func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	log.Println("Get Metrics", r.URL)
@@ -109,7 +110,7 @@ func (h *routerGroup) GetMetricByName(c *gin.Context) ([]byte, error) {
 	return response, nil
 }
 
-func (h *routerGroup) GetMetricsName(c *gin.Context) ([]byte, error) {
+func (h *routerGroup) MetricList(c *gin.Context) ([]byte, error) {
 	c.Writer.Header().Set("Content-Type", "text/html")
 	return []byte(createResponse(h.s)), nil
 }
@@ -160,10 +161,10 @@ func (h *routerGroup) UpdateMetricsByPath(c *gin.Context) ([]byte, error) {
 	return nil, nil
 }
 
-func (h *routerGroup) UpdateMetrics(c *gin.Context) ([]byte, error) {
+func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
-	log.Println("UpdateMetrics Metrics", r.URL)
+	log.Println("UpdateMetric Metrics", r.URL)
 
 	requestBody := client.Metrics{}
 
