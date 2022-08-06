@@ -11,17 +11,17 @@ import (
 )
 
 var (
-	ADDRESS       *string        = flag.StringP("a", "a", "127.0.0.1:8080", "help message for flagname")
-	StoreFile     *string        = flag.StringP("f", "f", "/tmp/devops-metrics-db.json", "help message for flagname")
-	StoreInterval *time.Duration = flag.DurationP("i", "i", time.Duration(300*time.Second), "help message for flagname")
-	RESTORE       *bool          = flag.BoolP("r", "r", true, "help message for flagname")
+	Address       = flag.StringP("a", "a", "127.0.0.1:8080", "help message for flagname")
+	StoreFile     = flag.StringP("f", "f", "/tmp/devops-metrics-db.json", "help message for flagname")
+	StoreInterval = flag.DurationP("i", "i", 1*time.Second, "help message for flagname")
+	Restore       = flag.BoolP("r", "r", true, "help message for flagname")
 )
 
 type Config struct {
-	ADDRESS       string        `env:"ADDRESS"`
+	Address       string        `env:"Address"`
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
-	RESTORE       bool          `env:"RESTORE"`
+	Restore       bool          `env:"Restore"`
 }
 
 func NewConfig() *Config {
@@ -31,8 +31,8 @@ func NewConfig() *Config {
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	flag.Parse()
 
-	if cfg.ADDRESS == "" {
-		cfg.ADDRESS = *ADDRESS
+	if cfg.Address == "" {
+		cfg.Address = *Address
 	}
 	if cfg.StoreInterval == 0 {
 		cfg.StoreInterval = *StoreInterval
@@ -40,11 +40,11 @@ func NewConfig() *Config {
 	if cfg.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
 	}
-	if os.Getenv("RESTORE") == "" {
-		cfg.RESTORE = *RESTORE
+	if os.Getenv("Restore") == "" {
+		cfg.Restore = *Restore
 	}
 
-	log.Println(cfg.ADDRESS)
+	log.Println(cfg.Address)
 	log.Println(cfg)
 	if err != nil {
 		log.Fatal(err)

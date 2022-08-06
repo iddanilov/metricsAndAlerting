@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"os"
@@ -17,7 +18,7 @@ type Storage struct {
 
 func NewStorages(cfg *Config) *Storage {
 	events := make(map[string]client.Metrics, 10)
-	if cfg.RESTORE {
+	if cfg.Restore {
 		result, err := ReadEvents(cfg.StoreFile)
 		if err != nil {
 			log.Fatal(err)
@@ -48,7 +49,7 @@ func ReadEvents(fileName string) (metrics map[string]client.Metrics, err error) 
 	return metrics, nil
 }
 
-func (s *Storage) SaveMetricInFile() error {
+func (s *Storage) SaveMetricInFile(ctx context.Context) error {
 	if len(s.Metrics) == 0 {
 		return nil
 	}

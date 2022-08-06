@@ -17,13 +17,13 @@ import (
 )
 
 var (
-	ADDRESS        *string        = flag.StringP("a", "a", "127.0.0.1:8080", "help message for flagname")
-	PollInterval   *time.Duration = flag.DurationP("p", "p", time.Duration(2*time.Second), "help message for flagname")
-	ReportInterval *time.Duration = flag.DurationP("r", "r", time.Duration(10*time.Second), "help message for flagname")
+	Address        = flag.StringP("a", "a", "127.0.0.1:8080", "help message for flagname")
+	PollInterval   = flag.DurationP("p", "p", 2*time.Second, "help message for flagname")
+	ReportInterval = flag.DurationP("r", "r", 10*time.Second, "help message for flagname")
 )
 
 type Config struct {
-	ADDRESS        string        `env:"ADDRESS"`
+	Address        string        `env:"Address"`
 	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
 	PollInterval   time.Duration `env:"POLL_INTERVAL"`
 }
@@ -38,11 +38,11 @@ func NewClient() *Client {
 	err := env.Parse(&cfg)
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	flag.Parse()
-	if cfg.ADDRESS == "" {
-		cfg.ADDRESS = *ADDRESS
+	if cfg.Address == "" {
+		cfg.Address = *Address
 	}
-	if !strings.Contains(cfg.ADDRESS, "http") {
-		cfg.ADDRESS = "http://" + cfg.ADDRESS
+	if !strings.Contains(cfg.Address, "http") {
+		cfg.Address = "http://" + cfg.Address
 	}
 	if cfg.ReportInterval == 0 {
 		cfg.ReportInterval = *ReportInterval
@@ -70,7 +70,7 @@ func (c *Client) SendMetricByPath(params models.Metrics) error {
 		value = strconv.FormatInt(*params.Delta, 10)
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.Config.ADDRESS, params.MType, params.ID, value), nil)
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.Config.Address, params.MType, params.ID, value), nil)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (c *Client) SendMetrics(metrics models.Metrics) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/", c.Config.ADDRESS), bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/", c.Config.Address), bytes.NewBuffer(body))
 	if err != nil {
 		return err
 	}

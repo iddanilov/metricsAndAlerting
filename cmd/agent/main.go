@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 	"time"
 
 	client "github.com/metricsAndAlerting/internal/agent"
@@ -12,6 +16,8 @@ import (
 const numJobs = 25
 
 func main() {
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+
 	respClient := client.NewClient()
 	runtimeStats := runtime.MemStats{}
 	requestValue := models.Metrics{}
@@ -24,17 +30,24 @@ func main() {
 	reportIntervalTicker := time.NewTicker(respClient.Config.ReportInterval)
 	pollIntervalTicker := time.NewTicker(respClient.Config.PollInterval)
 	for {
-		<-pollIntervalTicker.C
-		GetRuntimeStat(&runtimeStats)
-		metricValue := requestValue.SetMetrics(&runtimeStats)
-
-		go func() {
-			<-reportIntervalTicker.C
+		select {
+		case <-ctx.Done():
+			close(metricsChan)
+			log.Println("Stopped by user")
+			os.Exit(100)
+		default:
+			<-pollIntervalTicker.C
 			GetRuntimeStat(&runtimeStats)
-			metricValue = requestValue.SetMetrics(&runtimeStats)
-			metricsChan <- metricValue
-			metricsChan <- counter.SetPollCountMetricValue()
-		}()
+			metricValue := requestValue.SetMetrics(&runtimeStats)
+
+			go func() {
+				<-reportIntervalTicker.C
+				GetRuntimeStat(&runtimeStats)
+				metricValue = requestValue.SetMetrics(&runtimeStats)
+				metricsChan <- metricValue
+				metricsChan <- counter.SetPollCountMetricValue()
+			}()
+		}
 	}
 }
 

@@ -10,7 +10,7 @@ import (
 )
 
 var floatValue = 5.5
-var intValue = 5.5
+var intValue = 5
 
 func TestSaveGaugeMetric(t *testing.T) {
 	// создаём массив тестов: имя и желаемый результат
@@ -57,7 +57,7 @@ func TestSaveCounterMetric(t *testing.T) {
 			countMetricResult: client.Metrics{
 				ID:    "PollCount",
 				MType: "Counter",
-				Value: &intValue,
+				Value: &floatValue,
 			},
 		},
 	}

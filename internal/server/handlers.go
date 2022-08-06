@@ -3,20 +3,15 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/metricsAndAlerting/internal/middleware"
 	client "github.com/metricsAndAlerting/internal/models"
-)
-
-const (
-	update      = "/update/"
-	value       = "/value/"
-	metricsName = "/"
 )
 
 type routerGroup struct {
@@ -37,13 +32,10 @@ func (h *routerGroup) Routes() {
 	{
 		group.GET("/", middleware.Middleware(h.MetricList))
 		group.POST("/update/:type/:name/:value", middleware.Middleware(h.UpdateMetricsByPath))
-		group.POST(update, middleware.Middleware(h.UpdateMetric))
-		group.POST(value, middleware.Middleware(h.GetMetric))
+		group.POST("/value/", middleware.Middleware(h.UpdateMetric))
+		group.POST("/update/", middleware.Middleware(h.GetMetric))
 		group.GET("/value/:type/:name", middleware.Middleware(h.GetMetricByPath))
 	}
-
-	//h.rg.GET(value, middleware.Middleware(h.GetMetricByPath))
-
 }
 
 func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
@@ -89,12 +81,6 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	}
 
 	var response []byte
-	//urlValues := strings.Split(r.URL.Path, "/")
-	//if len(urlValues) < 4 {
-	//	w.WriteHeader(http.StatusNotFound)
-	//	return nil, middleware.ErrNotFound
-	//}
-
 	if strings.ToLower(mType) == "gauge" {
 		result, ok := h.s.Metrics[name]
 		if !ok {
