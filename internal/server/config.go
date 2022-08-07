@@ -15,7 +15,7 @@ var (
 	StoreFile     = flag.StringP("f", "f", "/tmp/devops-metrics-db.json", "help message for flagname")
 	StoreInterval = flag.DurationP("i", "i", 300*time.Second, "help message for flagname")
 	Restore       = flag.BoolP("r", "r", true, "help message for flagname")
-	Key           = flag.StringP("k", "k", "LOOOOOOOOOOOOOOL", "help message for KEY")
+	Key           = flag.StringP("k", "k", "", "help message for KEY")
 )
 
 type Config struct {
@@ -43,7 +43,9 @@ func NewConfig() *Config {
 		cfg.StoreFile = *StoreFile
 	}
 	if cfg.Key == "" {
-		cfg.Key = *Key
+		if *Key != "" {
+			cfg.Key = *Key
+		}
 	}
 	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore
