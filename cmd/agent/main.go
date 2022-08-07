@@ -69,15 +69,7 @@ func hash(m string, key []byte) (string, error) {
 	}
 
 	nonce := key[len(key)-aesgcm.NonceSize():]
-
-	if err != nil {
-		return "", err
-	}
-
 	dst := aesgcm.Seal(nil, nonce, src, nil)
-	if err != nil {
-		return "", err
-	}
 	log.Println("dst: ", dst)
 	return hex.EncodeToString(dst), err
 	// создаём вектор инициализации

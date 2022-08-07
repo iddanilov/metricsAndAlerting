@@ -45,6 +45,8 @@ func (h *routerGroup) Routes() {
 }
 
 func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
+	var hashValue string
+	var err error
 	r := c.Request
 	w := c.Writer
 	log.Println("Get Metrics", r.Body)
@@ -60,10 +62,20 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 		return nil, middleware.ErrNotFound
 	}
 	response, ok := h.s.Metrics[requestBody.ID]
+
 	response.MType = strings.ToLower(response.MType)
 	if !ok {
 		return nil, middleware.ErrNotFound
 	}
+	if *response.Value != 0 {
+		hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", response.ID, *response.Value), []byte(h.key))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return nil, err
+		}
+	}
+	response.Hash = hashValue
+
 	w.Header().Set("Content-Type", "application/json")
 	body, err := json.Marshal(response)
 	if err != nil {
@@ -218,6 +230,25 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	w.WriteHeader(http.StatusOK)
 
 	return nil, nil
+}
+
+func hashCreate(m string, key []byte) (string, error) {
+	src := []byte(m)
+
+	aesblock, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	aesgcm, err := cipher.NewGCM(aesblock)
+	if err != nil {
+		return "", err
+	}
+
+	nonce := key[len(key)-aesgcm.NonceSize():]
+	dst := aesgcm.Seal(nil, nonce, src, nil)
+	log.Println("dst: ", dst)
+	return hex.EncodeToString(dst), err
 }
 
 func hash(bodyHash string, m string, key []byte) (bool, error) {
