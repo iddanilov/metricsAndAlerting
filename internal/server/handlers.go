@@ -253,6 +253,11 @@ func hashCreate(m string, key []byte) (string, error) {
 
 func hash(bodyHash string, m string, key []byte) (bool, error) {
 	encrypted, err := hex.DecodeString(bodyHash)
+	if err != nil {
+		log.Printf("error: %v\n", err)
+		return false, err
+	}
+
 	aesblock, err := aes.NewCipher(key)
 	if err != nil {
 		log.Printf("error: %v\n", err)
