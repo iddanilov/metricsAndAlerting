@@ -40,7 +40,7 @@ func NewConfig() *Config {
 	if cfg.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
 	}
-	if os.Getenv("Restore") == "" {
+	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore
 	}
 
