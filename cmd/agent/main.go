@@ -34,7 +34,7 @@ func main() {
 		case <-ctx.Done():
 			close(metricsChan)
 			log.Println("Stopped by user")
-			os.Exit(100)
+			os.Exit(0)
 		default:
 			<-pollIntervalTicker.C
 			GetRuntimeStat(&runtimeStats)

@@ -30,7 +30,7 @@ func main() {
 			case <-ctx.Done():
 				close(times)
 				log.Println("Stop program")
-				os.Exit(100)
+				os.Exit(0)
 			default:
 				<-reportIntervalTicker.C
 				err := storage.SaveMetricInFile(ctx)
