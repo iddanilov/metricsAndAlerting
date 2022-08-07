@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -33,7 +32,6 @@ func main() {
 				log.Println("Stop program")
 				os.Exit(100)
 			default:
-				fmt.Println("lol")
 				<-reportIntervalTicker.C
 				err := storage.SaveMetricInFile(ctx)
 				if err != nil {
@@ -46,7 +44,7 @@ func main() {
 	r := gin.New()
 	r.RedirectTrailingSlash = false
 
-	rg := server.NewRouterGroup(&r.RouterGroup, storage)
+	rg := server.NewRouterGroup(&r.RouterGroup, storage, cfg.Key)
 	rg.Routes()
 
 	r.Run(cfg.Address)

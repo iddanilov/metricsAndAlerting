@@ -13,8 +13,9 @@ import (
 var (
 	Address       = flag.StringP("a", "a", "127.0.0.1:8080", "help message for flagname")
 	StoreFile     = flag.StringP("f", "f", "/tmp/devops-metrics-db.json", "help message for flagname")
-	StoreInterval = flag.DurationP("i", "i", 1*time.Second, "help message for flagname")
+	StoreInterval = flag.DurationP("i", "i", 300*time.Second, "help message for flagname")
 	Restore       = flag.BoolP("r", "r", true, "help message for flagname")
+	Key           = flag.StringP("k", "k", "LOOOOOOOOOOOOOOL", "help message for KEY")
 )
 
 type Config struct {
@@ -22,6 +23,7 @@ type Config struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"Restore"`
+	Key           string        `env:"Key"`
 }
 
 func NewConfig() *Config {
@@ -39,6 +41,9 @@ func NewConfig() *Config {
 	}
 	if cfg.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
+	}
+	if cfg.Key == "" {
+		cfg.Key = *Key
 	}
 	if os.Getenv("Restore") == "" {
 		cfg.Restore = *Restore

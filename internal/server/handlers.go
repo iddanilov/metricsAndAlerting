@@ -1,6 +1,10 @@
 package server
 
 import (
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -15,14 +19,16 @@ import (
 )
 
 type routerGroup struct {
-	rg *gin.RouterGroup
-	s  *Storage
+	rg  *gin.RouterGroup
+	s   *Storage
+	key string
 }
 
-func NewRouterGroup(rg *gin.RouterGroup, s *Storage) *routerGroup {
+func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string) *routerGroup {
 	return &routerGroup{
-		rg: rg,
-		s:  s,
+		rg:  rg,
+		s:   s,
+		key: key,
 	}
 }
 
@@ -32,8 +38,8 @@ func (h *routerGroup) Routes() {
 	{
 		group.GET("/", middleware.Middleware(h.MetricList))
 		group.POST("/update/:type/:name/:value", middleware.Middleware(h.UpdateMetricsByPath))
-		group.POST("/value/", middleware.Middleware(h.UpdateMetric))
-		group.POST("/update/", middleware.Middleware(h.GetMetric))
+		group.POST("/value/", middleware.Middleware(h.GetMetric))
+		group.POST("/update/", middleware.Middleware(h.UpdateMetric))
 		group.GET("/value/:type/:name", middleware.Middleware(h.GetMetricByPath))
 	}
 }
@@ -178,12 +184,34 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			MType: strings.ToLower(requestBody.MType),
 			Value: requestBody.Value,
 		})
+
+		if requestBody.Hash != "" {
+			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
+			if err != nil {
+				log.Println(err)
+				return nil, err
+			}
+			if ok {
+				w.WriteHeader(http.StatusBadRequest)
+				return nil, err
+			}
+		}
 	} else if strings.ToLower(requestBody.MType) == "counter" {
 		h.s.SaveCountMetric(client.Metrics{
 			ID:    requestBody.ID,
 			MType: strings.ToLower(requestBody.MType),
 			Delta: requestBody.Delta,
 		})
+		if requestBody.Hash != "" {
+			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%v", requestBody.ID, *requestBody.Delta), []byte(h.key))
+			if err != nil {
+				return nil, err
+			}
+			if ok {
+				w.WriteHeader(http.StatusBadRequest)
+				return nil, err
+			}
+		}
 	} else {
 		w.WriteHeader(http.StatusNotImplemented)
 		return nil, middleware.ErrNotFound
@@ -191,6 +219,35 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	w.WriteHeader(http.StatusOK)
 
 	return nil, nil
+}
+
+func hash(bodyHash string, m string, key []byte) (bool, error) {
+	encrypted, err := hex.DecodeString(bodyHash)
+	aesblock, err := aes.NewCipher(key)
+	if err != nil {
+		log.Printf("error: %v\n", err)
+		return false, err
+	}
+
+	aesgcm, err := cipher.NewGCM(aesblock)
+	if err != nil {
+		log.Printf("error cipher:: %v\n", err)
+		return false, err
+	}
+	nonce := key[len(key)-aesgcm.NonceSize():]
+
+	src2, err := aesgcm.Open(nil, nonce, encrypted, nil) // расшифровываем
+	if err != nil {
+		log.Printf("error aesgcm: %v\n", err)
+		return false, err
+	}
+
+	if bytes.Equal(src2, []byte(m)) {
+		log.Println("-------- Хеши равны -------------")
+		return true, nil
+	}
+
+	return false, err
 }
 
 func createResponse(s *Storage) string {

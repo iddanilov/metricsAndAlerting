@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"encoding/hex"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -51,10 +55,48 @@ func main() {
 	}
 }
 
+func hash(m string, key []byte) (string, error) {
+	src := []byte(m) // данные, которые хотим зашифровать
+
+	aesblock, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	aesgcm, err := cipher.NewGCM(aesblock)
+	if err != nil {
+		return "", err
+	}
+
+	nonce := key[len(key)-aesgcm.NonceSize():]
+
+	if err != nil {
+		return "", err
+	}
+
+	dst := aesgcm.Seal(nil, nonce, src, nil)
+	if err != nil {
+		return "", err
+	}
+	log.Println("dst: ", dst)
+	return hex.EncodeToString(dst), err
+	// создаём вектор инициализации
+}
+
 func sendMetrics(jobs <-chan []models.Metrics, resp *client.Client) {
 	for j := range jobs {
 		for _, metrics := range j {
 			if !metrics.MetricISEmpty() {
+				if metrics.Value != nil {
+					hashValue, err := hash(fmt.Sprintf("%s:gauge:%f", metrics.ID, *metrics.Value), []byte(resp.Config.Key))
+					if err != nil {
+						log.Fatal(err)
+					}
+					metrics.Hash = hashValue
+				}
+
+				log.Println("body: ", metrics)
+
 				err := resp.SendMetricByPath(metrics)
 				if err != nil {
 					log.Println("Err: ", err.Error())
