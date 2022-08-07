@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -22,13 +23,15 @@ type routerGroup struct {
 	rg  *gin.RouterGroup
 	s   *Storage
 	key string
+	db  *sql.DB
 }
 
-func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string) *routerGroup {
+func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *sql.DB) *routerGroup {
 	return &routerGroup{
 		rg:  rg,
 		s:   s,
 		key: key,
+		db:  db,
 	}
 }
 
@@ -41,7 +44,15 @@ func (h *routerGroup) Routes() {
 		group.POST("/update/", middleware.Middleware(h.UpdateMetric))
 		group.POST("/value/", middleware.Middleware(h.GetMetric))
 		group.GET("/value/:type/:name", middleware.Middleware(h.GetMetricByPath))
+		group.GET("/ping/", middleware.Middleware(h.Ping))
 	}
+}
+
+func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
+	if err := h.db.PingContext(c); err != nil {
+		return nil, middleware.DisconnectDB
+	}
+	return nil, nil
 }
 
 func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {

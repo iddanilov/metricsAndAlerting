@@ -19,7 +19,12 @@ func main() {
 	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	cfg := server.NewConfig()
-	storage := server.NewStorages(cfg)
+	file := server.NewStorages(cfg)
+
+	storage, err := server.New(cfg.DSN)
+	if err != nil {
+		panic(err)
+	}
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
 	times := make(chan int64, 1)
@@ -33,7 +38,7 @@ func main() {
 				os.Exit(0)
 			default:
 				<-reportIntervalTicker.C
-				err := storage.SaveMetricInFile(ctx)
+				err := file.SaveMetricInFile(ctx)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -44,7 +49,7 @@ func main() {
 	r := gin.New()
 	r.RedirectTrailingSlash = false
 
-	rg := server.NewRouterGroup(&r.RouterGroup, storage, cfg.Key)
+	rg := server.NewRouterGroup(&r.RouterGroup, file, cfg.Key, storage)
 	rg.Routes()
 
 	r.Run(cfg.Address)

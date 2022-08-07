@@ -43,6 +43,13 @@ func Middleware(h appHandler) gin.HandlerFunc {
 						w.WriteHeader(http.StatusInternalServerError)
 					}
 					return
+				} else if errors.Is(err, DisconnectDB) {
+					w.WriteHeader(http.StatusInternalServerError)
+					_, err := w.Write(DisconnectDB.Marshal())
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+					}
+					return
 				}
 
 				err = err.(*AppError)

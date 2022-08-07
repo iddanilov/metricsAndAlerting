@@ -16,6 +16,7 @@ var (
 	StoreInterval = flag.DurationP("i", "i", 300*time.Second, "help message for flagname")
 	Restore       = flag.BoolP("r", "r", true, "help message for flagname")
 	Key           = flag.StringP("k", "k", "", "help message for KEY")
+	DSN           = flag.StringP("d", "d", "host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable", "help message for KEY")
 )
 
 type Config struct {
@@ -24,6 +25,7 @@ type Config struct {
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
 	Key           string        `env:"KEY"`
+	DSN           string        `env:"DATABASE_DSN"`
 }
 
 func NewConfig() *Config {
@@ -46,6 +48,9 @@ func NewConfig() *Config {
 		if *Key != "" {
 			cfg.Key = *Key
 		}
+	}
+	if cfg.DSN == "" {
+		cfg.DSN = *DSN
 	}
 	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore
