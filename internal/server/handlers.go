@@ -38,8 +38,8 @@ func (h *routerGroup) Routes() {
 	{
 		group.GET("/", middleware.Middleware(h.MetricList))
 		group.POST("/update/:type/:name/:value", middleware.Middleware(h.UpdateMetricsByPath))
-		group.POST("/value/", middleware.Middleware(h.GetMetric))
 		group.POST("/update/", middleware.Middleware(h.UpdateMetric))
+		group.POST("/value/", middleware.Middleware(h.GetMetric))
 		group.GET("/value/:type/:name", middleware.Middleware(h.GetMetricByPath))
 	}
 }
@@ -184,7 +184,6 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			MType: strings.ToLower(requestBody.MType),
 			Value: requestBody.Value,
 		})
-
 		if requestBody.Hash != "" {
 			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
 			if err != nil {

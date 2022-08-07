@@ -19,11 +19,11 @@ var (
 )
 
 type Config struct {
-	Address       string        `env:"Address"`
+	Address       string        `env:"ADDRESS"`
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
-	Restore       bool          `env:"Restore"`
-	Key           string        `env:"Key"`
+	Restore       bool          `env:"RESTORE"`
+	Key           string        `env:"KEY"`
 }
 
 func NewConfig() *Config {
@@ -45,7 +45,7 @@ func NewConfig() *Config {
 	if cfg.Key == "" {
 		cfg.Key = *Key
 	}
-	if os.Getenv("Restore") == "" {
+	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore
 	}
 
