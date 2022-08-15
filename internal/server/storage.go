@@ -1,33 +1,86 @@
 package server
 
 import (
+	"context"
+	"encoding/json"
 	"log"
+	"os"
 	"sync"
 
 	client "github.com/metricsAndAlerting/internal/models"
 )
 
 type Storage struct {
-	Gauge   map[string]client.GaugeMetric
-	Counter map[string]client.CountMetric
+	Metrics map[string]client.Metrics
 	Mutex   *sync.Mutex
+	File    string
 }
 
-func (s *Storage) SaveGaugeMetric(metric client.GaugeMetric) {
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
-	s.Gauge[metric.Name] = metric
+func NewStorages(cfg *Config) *Storage {
+	events := make(map[string]client.Metrics, 10)
+	if cfg.Restore {
+		result, err := ReadEvents(cfg.StoreFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if result != nil {
+			events = result
+		}
+	}
+	return &Storage{
+		Metrics: events,
+		Mutex:   &sync.Mutex{},
+		File:    cfg.StoreFile,
+	}
 }
 
-func (s *Storage) SaveCountMetric(metric client.CountMetric) {
+func ReadEvents(fileName string) (metrics map[string]client.Metrics, err error) {
+	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0777)
+	defer func(file *os.File) {
+		err = file.Close()
+	}(file)
+	if err != nil {
+		return nil, err
+	}
+	err = json.NewDecoder(file).Decode(&metrics)
+	if err != nil {
+		return nil, err
+	}
+	return metrics, nil
+}
+
+func (s *Storage) SaveMetricInFile(ctx context.Context) error {
+	if len(s.Metrics) == 0 {
+		return nil
+	}
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
-	result, ok := s.Counter[metric.Name]
+	file, err := os.OpenFile(s.File, os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		return err
+	}
+
+	err = json.NewEncoder(file).Encode(s.Metrics)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (s *Storage) SaveGaugeMetric(metric *client.Metrics) {
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+	s.Metrics[metric.ID] = *metric
+}
+
+func (s *Storage) SaveCountMetric(metric client.Metrics) {
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+	result, ok := s.Metrics[metric.ID]
 	if ok {
-		result.Value = result.Value + metric.Value
-		log.Println(result.Value)
-		s.Counter[metric.Name] = result
+		*result.Delta = *result.Delta + *metric.Delta
+		s.Metrics[metric.ID] = result
 	} else {
-		s.Counter[metric.Name] = metric
+		s.Metrics[metric.ID] = metric
 	}
 }

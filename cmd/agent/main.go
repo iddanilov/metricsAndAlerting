@@ -1,70 +1,69 @@
 package main
 
 import (
+	"context"
 	"log"
+	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 	"time"
 
 	client "github.com/metricsAndAlerting/internal/agent"
 	"github.com/metricsAndAlerting/internal/models"
 )
 
-const (
-	reportInterval = 10 * time.Second
-	pollInterval   = 2 * time.Second
-	numJobs        = 25
-)
+const numJobs = 25
 
 func main() {
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+
 	respClient := client.NewClient()
 	runtimeStats := runtime.MemStats{}
-	requestValue := models.RuntimeMetric{}
+	requestValue := models.Metrics{}
+	var counter models.Counter
 
-	metricsChan := make(chan models.GaugeMetric, numJobs)
-	pollCountMetricsChan := make(chan models.CountMetric, 1)
+	metricsChan := make(chan []models.Metrics, numJobs)
 	for w := 1; w <= numJobs; w++ {
-		go sendGaugeMetric(metricsChan, respClient)
-		go sendCountMetric(pollCountMetricsChan, respClient)
+		go sendMetrics(metricsChan, respClient)
 	}
-	reportIntervalTicker := time.NewTicker(reportInterval)
-	pollIntervalTicker := time.NewTicker(pollInterval)
+	reportIntervalTicker := time.NewTicker(respClient.Config.ReportInterval)
+	pollIntervalTicker := time.NewTicker(respClient.Config.PollInterval)
 	for {
-		<-pollIntervalTicker.C
-		GetRuntimeStat(&runtimeStats)
-		metricValue := requestValue.SetMetricValue(runtimeStats)
-		log.Println(metricValue)
-
-		go func() {
-			<-reportIntervalTicker.C
+		select {
+		case <-ctx.Done():
+			close(metricsChan)
+			log.Println("Stopped by user")
+			os.Exit(0)
+		default:
+			<-pollIntervalTicker.C
 			GetRuntimeStat(&runtimeStats)
-			metricValue = requestValue.SetMetricValue(runtimeStats)
-			for _, metric := range metricValue {
-				if !metric.GaugeMetricISEmpty() {
-					metricsChan <- metric
-				}
-			}
-			pollCountMetricsChan <- requestValue.SetPollCountMetricValue()
-		}()
+			metricValue := requestValue.SetMetrics(&runtimeStats)
 
-	}
-}
-
-func sendGaugeMetric(jobs <-chan models.GaugeMetric, resp *client.Client) {
-	for j := range jobs {
-		log.Println(j)
-		err := resp.SendMetrics(j)
-		if err != nil {
-			log.Println("Err: ", err.Error())
+			go func() {
+				<-reportIntervalTicker.C
+				GetRuntimeStat(&runtimeStats)
+				metricValue = requestValue.SetMetrics(&runtimeStats)
+				metricsChan <- metricValue
+				metricsChan <- counter.SetPollCountMetricValue()
+			}()
 		}
 	}
 }
 
-func sendCountMetric(jobs <-chan models.CountMetric, resp *client.Client) {
+func sendMetrics(jobs <-chan []models.Metrics, resp *client.Client) {
 	for j := range jobs {
-		log.Println(j)
-		err := resp.SendPollCountMetric(j)
-		if err != nil {
-			log.Println("Err: ", err.Error())
+		for _, metrics := range j {
+			if !metrics.MetricISEmpty() {
+				err := resp.SendMetricByPath(metrics)
+				if err != nil {
+					log.Println("Err: ", err.Error())
+				}
+				err = resp.SendMetrics(metrics)
+				if err != nil {
+					log.Println("Err: ", err.Error())
+				}
+			}
 		}
 	}
 }

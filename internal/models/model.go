@@ -1,213 +1,67 @@
 package models
 
 import (
+	"log"
 	"math/rand"
+	"reflect"
 	"runtime"
 )
 
-type GaugeMetric struct {
-	Name       string
-	MetricType string
-	Value      float64
+type Counter int64
+
+type Metrics struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	Hash  string   `json:"hash,omitempty"`  // значение хеш-функции
 }
 
-func (gm GaugeMetric) GaugeMetricISEmpty() bool {
-	return gm.Name == ""
+func (m Metrics) MetricISEmpty() bool {
+	return m.ID == ""
 }
 
-type CountMetric struct {
-	Name       string
-	MetricType string
-	Value      int64
+var gaugeMetric = [...]string{
+	"Alloc", "BuckHashSys", "Frees", "GCCPUFraction",
+	"GCSys", "HeapAlloc", "HeapIdle", "HeapInuse", "HeapObjects",
+	"HeapReleased", "HeapSys", "LastGC", "Lookups", "MCacheInuse",
+	"MCacheSys", "MSpanInuse", "MSpanSys", "Mallocs", "NextGC",
+	"NumForcedGC", "NumGC", "OtherSys", "PauseTotalNs", "StackInuse",
+	"StackSys", "Sys", "TotalAlloc", "RandomValue",
 }
 
-func (cm CountMetric) CountMetricISEmpty() bool {
-	return cm.Name == ""
-}
-
-type RuntimeMetric struct {
-	Alloc         GaugeMetric
-	BuckHashSys   GaugeMetric
-	Frees         GaugeMetric
-	GCCPUFraction GaugeMetric
-	GCSys         GaugeMetric
-	HeapAlloc     GaugeMetric
-	HeapIdle      GaugeMetric
-	HeapInuse     GaugeMetric
-	HeapObjects   GaugeMetric
-	HeapReleased  GaugeMetric
-	HeapSys       GaugeMetric
-	LastGC        GaugeMetric
-	Lookups       GaugeMetric
-	MCacheInuse   GaugeMetric
-	MCacheSys     GaugeMetric
-	MSpanInuse    GaugeMetric
-	MSpanSys      GaugeMetric
-	Mallocs       GaugeMetric
-	NextGC        GaugeMetric
-	NumForcedGC   GaugeMetric
-	NumGC         GaugeMetric
-	OtherSys      GaugeMetric
-	PauseTotalNs  GaugeMetric
-	StackInuse    GaugeMetric
-	StackSys      GaugeMetric
-	Sys           GaugeMetric
-	TotalAlloc    GaugeMetric
-	RandomValue   GaugeMetric
-	PollCount     CountMetric
-}
-
-func (d *RuntimeMetric) SetPollCountMetricValue() CountMetric {
-	d.PollCount.Value++
-	return CountMetric{
-		Name:       "PollCount",
-		MetricType: "counter",
-		Value:      d.PollCount.Value,
+func (*Metrics) SetMetrics(runtimeStat *runtime.MemStats) []Metrics {
+	var result []Metrics
+	v := reflect.ValueOf(*runtimeStat)
+	for _, s := range gaugeMetric {
+		var value float64
+		if s == "RandomValue" {
+			value = rand.Float64()
+		} else {
+			valueType := v.FieldByName(s).Type()
+			if valueType.Name() == "uint64" || valueType.Name() == "uint32" {
+				value = float64(v.FieldByName(s).Uint())
+			} else if valueType.Name() == "float64" {
+				value = v.FieldByName(s).Float()
+			}
+		}
+		result = append(result, Metrics{
+			ID:    s,
+			MType: "Gauge",
+			Value: &value,
+		})
 	}
+	return result
 }
 
-func (d *RuntimeMetric) SetMetricValue(runtimeStat runtime.MemStats) []GaugeMetric {
-	metric := make([]GaugeMetric, 25)
-	metric = append(metric, GaugeMetric{
-		Name:       "Alloc",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.Alloc),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "BuckHashSys",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.BuckHashSys),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "Frees",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.Frees),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "GCCPUFraction",
-		MetricType: "Gauge",
-		Value:      runtimeStat.GCCPUFraction,
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "GCSys",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.GCSys),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "HeapAlloc",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.HeapAlloc),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "HeapIdle",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.HeapIdle),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "HeapInuse",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.HeapInuse),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "HeapObjects",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.HeapObjects),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "HeapReleased",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.HeapReleased),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "HeapSys",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.HeapSys),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "LastGC",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.LastGC),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "Lookups",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.Lookups),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "MCacheInuse",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.MCacheInuse),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "MCacheSys",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.MCacheSys),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "MSpanInuse",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.MSpanInuse),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "MSpanSys",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.MSpanSys),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "Mallocs",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.Mallocs),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "NextGC",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.NextGC),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "NumForcedGC",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.NumForcedGC),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "NumGC",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.NumGC),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "OtherSys",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.OtherSys),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "PauseTotalNs",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.PauseTotalNs),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "StackInuse",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.StackInuse),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "StackSys",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.StackSys),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "Sys",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.Sys),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "TotalAlloc",
-		MetricType: "Gauge",
-		Value:      float64(runtimeStat.TotalAlloc),
-	})
-	metric = append(metric, GaugeMetric{
-		Name:       "RandomValue",
-		MetricType: "Gauge",
-		Value:      rand.Float64(),
-	})
-
-	return metric
+func (c *Counter) SetPollCountMetricValue() []Metrics {
+	*c++
+	value := int64(*c)
+	log.Println(*c)
+	return []Metrics{{
+		ID:    "PollCount",
+		MType: "Counter",
+		Delta: &value,
+	},
+	}
 }

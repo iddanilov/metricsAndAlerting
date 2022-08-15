@@ -1,38 +1,51 @@
 package main
 
 import (
+	"context"
 	"log"
-	"net/http"
-	"sync"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/gin-gonic/gin"
 
-	client "github.com/metricsAndAlerting/internal/models"
 	"github.com/metricsAndAlerting/internal/server"
 )
 
 func main() {
 	log.Println("create router")
-	router := httprouter.New()
-	router.RedirectTrailingSlash = false
 
-	storage := server.Storage{
-		Gauge:   make(map[string]client.GaugeMetric, 10),
-		Counter: make(map[string]client.CountMetric, 10),
-		Mutex:   &sync.Mutex{},
-	}
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
-	log.Println("register service handler")
-	handler := server.NewHandler(&storage)
-	handler.Register(router)
+	cfg := server.NewConfig()
+	storage := server.NewStorages(cfg)
 
-	s := &http.Server{
-		Addr:         "127.0.0.1:8080",
-		Handler:      router,
-		WriteTimeout: 5 * time.Second,
-		ReadTimeout:  5 * time.Second,
-	}
+	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
+	times := make(chan int64, 1)
 
-	log.Fatal(s.ListenAndServe())
+	go func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				close(times)
+				log.Println("Stop program")
+				os.Exit(0)
+			default:
+				<-reportIntervalTicker.C
+				err := storage.SaveMetricInFile(ctx)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		}
+
+	}(ctx)
+	r := gin.New()
+	r.RedirectTrailingSlash = false
+
+	rg := server.NewRouterGroup(&r.RouterGroup, storage)
+	rg.Routes()
+
+	r.Run(cfg.Address)
 }
