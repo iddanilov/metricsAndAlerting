@@ -76,15 +76,19 @@ func hash(m string, key []byte) (string, error) {
 }
 
 func sendMetrics(jobs <-chan []models.Metrics, resp *client.Client) {
+	var hashValue string
+	var err error
 	for j := range jobs {
 		for _, metrics := range j {
 			if !metrics.MetricISEmpty() {
 				if metrics.Value != nil {
-					hashValue, err := hash(fmt.Sprintf("%s:gauge:%f", metrics.ID, *metrics.Value), []byte(resp.Config.Key))
-					if err != nil {
-						log.Fatal(err)
+					if resp.Config.Key != "" {
+						hashValue, err = hash(fmt.Sprintf("%s:gauge:%f", metrics.ID, *metrics.Value), []byte(resp.Config.Key))
+						if err != nil {
+							log.Fatal(err)
+						}
+						metrics.Hash = hashValue
 					}
-					metrics.Hash = hashValue
 				}
 
 				log.Println("body: ", metrics)

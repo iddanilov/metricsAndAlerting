@@ -27,7 +27,7 @@ type Config struct {
 	Address        string        `env:"ADDRESS"`
 	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
 	PollInterval   time.Duration `env:"POLL_INTERVAL"`
-	Key            string        `env:"Key"`
+	Key            string        `env:"KEY"`
 }
 
 type Client struct {
