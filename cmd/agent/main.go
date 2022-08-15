@@ -87,8 +87,8 @@ func sendMetrics(jobs <-chan []models.Metrics, resp *client.Client) {
 						if err != nil {
 							log.Fatal(err)
 						}
+						metrics.Hash = hashValue
 					}
-					metrics.Hash = hashValue
 				}
 
 				log.Println("body: ", metrics)
