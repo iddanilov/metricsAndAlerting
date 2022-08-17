@@ -79,7 +79,11 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 		return nil, middleware.ErrNotFound
 	}
 	if requestBody.Hash != "" {
-		hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
+		if strings.ToLower(requestBody.MType) == "gauge" {
+			hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
+		} else {
+			hashValue, err = hashCreate(fmt.Sprintf("%s:counter:%f", requestBody.ID, *requestBody.Delta), []byte(h.key))
+		}
 		if err != nil {
 			log.Println(err)
 			http.Error(w, err.Error(), http.StatusNotFound)
