@@ -16,24 +16,21 @@ type Metrics struct {
 	Value *sql.NullFloat64 `db:"value"`
 }
 
-func (db *DB) CreateTable(ctx context.Context) error {
-	row, err := db.db.Query(checkMetricDB)
-	err = row.Close()
-	if err != nil {
-		return err
-	}
-	if err != nil {
-		if err.Error() == `pq: relation "metrics" does not exist` {
-			_, err = db.db.ExecContext(ctx, createTable)
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			return err
-		}
-	}
-	return nil
-}
+//func (db *DB) CreateTable(ctx context.Context) error {
+//	row, err := db.db.Query(checkMetricDB)
+//	defer row.Close()
+//	if err != nil {
+//		if err.Error() == `pq: relation "metrics" does not exist` {
+//			_, err := db.db.ExecContext(ctx, createTable)
+//			if err != nil {
+//				return err
+//			}
+//		} else {
+//			return err
+//		}
+//	}
+//	return nil
+//}
 
 func (db *DB) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
 	_, err := db.db.ExecContext(ctx, queryUpdateMetrics, metrics.ID, metrics.MType, metrics.Delta, metrics.Value)
@@ -85,9 +82,9 @@ func (db *DB) GetMetric(ctx context.Context, metricID string) (models.Metrics, e
 	return dbMetric, nil
 }
 
-func (db *DB) GetCounterMetric(ctx context.Context, metricId string) (int64, error) {
+func (db *DB) GetCounterMetric(ctx context.Context, metricID string) (int64, error) {
 	var result int64
-	row := db.db.QueryRowContext(ctx, queryGetCounterMetricValue, metricId)
+	row := db.db.QueryRowContext(ctx, queryGetCounterMetricValue, metricID)
 	err := row.Scan(&result)
 	if err != nil {
 		log.Fatal(err)
