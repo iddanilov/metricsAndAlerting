@@ -101,7 +101,7 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 		response.MType = strings.ToLower(response.MType)
 		responseBody = response
 	}
-	if strings.EqualFold(responseBody.MType, requestBody.MType) {
+	if !strings.EqualFold(responseBody.MType, requestBody.MType) {
 		http.Error(w, "type is not correct", http.StatusNotFound)
 		return nil, err
 	}
