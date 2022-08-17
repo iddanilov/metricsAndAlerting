@@ -25,12 +25,14 @@ func main() {
 
 	storage, err := db.NewDB(cfg.DSN)
 	if err != nil {
+		log.Println(err)
 		panic(err)
 	}
-	//err = storage.CreateTable(ctx)
-	//if err != nil {
-	//	panic(err)
-	//}
+	err = storage.CreateTable(ctx)
+	if err != nil {
+		log.Println(err)
+		panic(err)
+	}
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
 	times := make(chan int64, 1)
@@ -46,7 +48,7 @@ func main() {
 				<-reportIntervalTicker.C
 				err = file.SaveMetricInFile(ctx)
 				if err != nil {
-					log.Fatal(err)
+					log.Println(err)
 				}
 			}
 		}

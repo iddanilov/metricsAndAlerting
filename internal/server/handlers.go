@@ -50,13 +50,17 @@ func (h *routerGroup) Routes() {
 }
 
 func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
+	log.Println("Ping")
 	if err := h.db.DBPing(c); err != nil {
+		log.Println(err)
 		return nil, middleware.DisconnectDB
 	}
 	return nil, nil
 }
 
 func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
+	log.Println("Get Metrics")
+
 	var hashValue string
 	var err error
 	r := c.Request
@@ -66,10 +70,10 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	responseBody := client.Metrics{}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		log.Println(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, err
 	}
-	log.Println("Get Metrics", requestBody)
 
 	if requestBody.ID == "" {
 		return nil, middleware.ErrNotFound
@@ -77,6 +81,7 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	if requestBody.Hash != "" {
 		hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
 		if err != nil {
+			log.Println(err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return nil, err
 		}
@@ -113,6 +118,7 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	if strings.ToLower(mType) == "gauge" {
 		result, err := h.db.GetGaugeMetric(c, name)
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
 		}
@@ -122,6 +128,7 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	} else if strings.ToLower(mType) == "counter" {
 		result, err := h.db.GetCounterMetric(c, name)
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
 		}

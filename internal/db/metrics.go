@@ -28,6 +28,9 @@ func (db *DB) CreateTable(ctx context.Context) error {
 			return err
 		}
 	}
+	if row.Err() != nil {
+		return err
+	}
 	defer row.Close()
 	return nil
 }
