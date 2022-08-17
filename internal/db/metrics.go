@@ -37,6 +37,7 @@ func (db *DB) CreateTable(ctx context.Context) error {
 
 func (db *DB) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
 	_, err := db.db.ExecContext(ctx, queryUpdateMetrics, metrics.ID, metrics.MType, metrics.Delta, metrics.Value)
+	log.Println("Can't Update Metric")
 	return err
 }
 
@@ -46,11 +47,13 @@ func (db *DB) UpdateMetrics(metrics []models.Metrics) error {
 	}
 	tx, err := db.db.Begin()
 	if err != nil {
+		log.Println("Can't create tx", err)
 		return err
 	}
 
 	stmt, err := tx.Prepare(queryUpdateMetrics)
 	if err != nil {
+		log.Println("Can't create stmt", err)
 		return err
 	}
 
@@ -58,6 +61,7 @@ func (db *DB) UpdateMetrics(metrics []models.Metrics) error {
 
 	for _, m := range metrics {
 		if _, err = stmt.Exec(m.ID, m.MType, m.Delta, m.Value); err != nil {
+			log.Println("Can't make Exec", err)
 			if err = tx.Rollback(); err != nil {
 				log.Fatalf("update drivers: unable to rollback: %v", err)
 			}

@@ -61,12 +61,12 @@ func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
 }
 
 func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
-	log.Println("Get Metrics")
 
 	var hashValue string
 	var err error
 	r := c.Request
 	w := c.Writer
+	log.Println("Get Metrics")
 	log.Println("Get Metrics", r.Body)
 	requestBody := client.Metrics{}
 	responseBody := client.Metrics{}
@@ -120,6 +120,7 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	w := c.Writer
 	var err error
 	log.Println("Get Metrics", r.URL)
+	log.Println("Metrics Body: ", r.Body)
 	mType := c.Params.ByName("type")
 	name := c.Params.ByName("name")
 	if mType == "" || name == "" {
@@ -184,6 +185,8 @@ func (h *routerGroup) MetricList(c *gin.Context) ([]byte, error) {
 func (h *routerGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
+	log.Println("UpdateMetricByPath Metrics", r.URL)
+	log.Println("Metrics Body: ", r.Body)
 	mType := c.Params.ByName("type")
 	name := c.Params.ByName("name")
 	mValue := c.Params.ByName("value")
@@ -191,7 +194,6 @@ func (h *routerGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 		w.WriteHeader(http.StatusNotFound)
 		return nil, middleware.ErrNotFound
 	}
-	log.Println("UpdateMetricByPath Metrics", r.URL)
 
 	if strings.ToLower(mType) == "gauge" {
 		v, err := strconv.ParseFloat(mValue, 64)
@@ -255,6 +257,7 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	log.Println("UpdateMetric Metrics", r.URL)
+	log.Println("Metrics Body: ", r.Body)
 
 	requestBody := client.Metrics{}
 
@@ -332,6 +335,7 @@ func (h *routerGroup) UpdateMetrics(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	log.Println("UpdateMetric Metrics", r.URL)
+	log.Println("Metrics Body: ", r.Body)
 
 	var requestBody []client.Metrics
 
