@@ -20,11 +20,6 @@ func NewDB(DNS string) (*DB, error) {
 		return nil, err
 	}
 
-	err = db.Ping()
-	if err != nil {
-		return nil, err
-	}
-
 	return &DB{
 		db:     db,
 		buffer: make([]models.Metrics, 0, 1000),
