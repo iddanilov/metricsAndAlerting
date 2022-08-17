@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/metricsAndAlerting/internal/db"
 	"log"
 	"os"
 	"os/signal"
@@ -21,7 +22,11 @@ func main() {
 	cfg := server.NewConfig()
 	file := server.NewStorages(cfg)
 
-	storage, err := server.New(cfg.DSN)
+	storage, err := db.NewDB(cfg.DSN)
+	if err != nil {
+		panic(err)
+	}
+	err = storage.CreateTable(ctx)
 	if err != nil {
 		panic(err)
 	}

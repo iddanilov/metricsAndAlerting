@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/metricsAndAlerting/internal/db"
 	"log"
 	"net/http"
 	"strconv"
@@ -23,10 +23,10 @@ type routerGroup struct {
 	rg  *gin.RouterGroup
 	s   *Storage
 	key string
-	db  *sql.DB
+	db  *db.DB
 }
 
-func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *sql.DB) *routerGroup {
+func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *db.DB) *routerGroup {
 	return &routerGroup{
 		rg:  rg,
 		s:   s,
@@ -42,6 +42,7 @@ func (h *routerGroup) Routes() {
 		group.GET("/", middleware.Middleware(h.MetricList))
 		group.POST("/update/:type/:name/:value", middleware.Middleware(h.UpdateMetricsByPath))
 		group.POST("/update/", middleware.Middleware(h.UpdateMetric))
+		group.POST("/updates/", middleware.Middleware(h.UpdateMetrics))
 		group.POST("/value/", middleware.Middleware(h.GetMetric))
 		group.GET("/value/:type/:name", middleware.Middleware(h.GetMetricByPath))
 		group.GET("/ping/", middleware.Middleware(h.Ping))
@@ -49,7 +50,7 @@ func (h *routerGroup) Routes() {
 }
 
 func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
-	if err := h.db.PingContext(c); err != nil {
+	if err := h.db.DBPing(c); err != nil {
 		return nil, middleware.DisconnectDB
 	}
 	return nil, nil
@@ -62,6 +63,7 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	w := c.Writer
 	log.Println("Get Metrics", r.Body)
 	requestBody := client.Metrics{}
+	responseBody := client.Metrics{}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -72,23 +74,17 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	if requestBody.ID == "" {
 		return nil, middleware.ErrNotFound
 	}
-	response, ok := h.s.Metrics[requestBody.ID]
-
-	response.MType = strings.ToLower(response.MType)
-	if !ok {
-		return nil, middleware.ErrNotFound
-	}
-	if *response.Value != 0 {
-		hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", response.ID, *response.Value), []byte(h.key))
+	if requestBody.Hash != "" {
+		hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return nil, err
 		}
+		requestBody.Hash = hashValue
 	}
-	response.Hash = hashValue
-
+	responseBody, err = h.db.GetMetric(c, requestBody.ID)
 	w.Header().Set("Content-Type", "application/json")
-	body, err := json.Marshal(response)
+	body, err := json.Marshal(responseBody)
 	if err != nil {
 		return nil, err
 	}
@@ -111,22 +107,21 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 
 	var response []byte
 	if strings.ToLower(mType) == "gauge" {
-		result, ok := h.s.Metrics[name]
-		if !ok {
+		result, err := h.db.GetGaugeMetric(c, name)
+		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
 		}
 
-		response = []byte(fmt.Sprintf("%v", *result.Value))
+		response = []byte(fmt.Sprintf("%v", result))
 		w.WriteHeader(http.StatusOK)
 	} else if strings.ToLower(mType) == "counter" {
-		result, ok := h.s.Metrics[name]
-		if !ok {
+		result, err := h.db.GetCounterMetric(c, name)
+		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
 		}
-
-		response = []byte(fmt.Sprintf("%v", *result.Delta))
+		response = []byte(fmt.Sprintf("%v", result))
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusNotFound)
@@ -164,6 +159,15 @@ func (h *routerGroup) UpdateMetricsByPath(c *gin.Context) ([]byte, error) {
 			MType: mType,
 			Value: &v,
 		})
+		err = h.db.UpdateMetric(c, client.Metrics{
+			ID:    name,
+			MType: mType,
+			Delta: nil,
+			Value: &v,
+		})
+		if err != nil {
+			log.Println(err)
+		}
 	} else if strings.ToLower(mType) == "counter" {
 		v, err := strconv.ParseInt(mValue, 10, 64)
 		if err != nil {
@@ -175,6 +179,15 @@ func (h *routerGroup) UpdateMetricsByPath(c *gin.Context) ([]byte, error) {
 			MType: mType,
 			Delta: &v,
 		})
+		err = h.db.UpdateMetric(c, client.Metrics{
+			ID:    name,
+			MType: mType,
+			Delta: &v,
+			Value: nil,
+		})
+		if err != nil {
+			log.Println(err)
+		}
 	} else {
 		return nil, middleware.UnknownMetricName
 	}
@@ -202,11 +215,6 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	}
 
 	if strings.ToLower(requestBody.MType) == "gauge" {
-		h.s.SaveGaugeMetric(&client.Metrics{
-			ID:    requestBody.ID,
-			MType: strings.ToLower(requestBody.MType),
-			Value: requestBody.Value,
-		})
 		if requestBody.Hash != "" {
 			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
 			if err != nil {
@@ -218,12 +226,21 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 				return nil, err
 			}
 		}
-	} else if strings.ToLower(requestBody.MType) == "counter" {
-		h.s.SaveCountMetric(client.Metrics{
+		h.s.SaveGaugeMetric(&client.Metrics{
 			ID:    requestBody.ID,
 			MType: strings.ToLower(requestBody.MType),
-			Delta: requestBody.Delta,
+			Value: requestBody.Value,
 		})
+		err := h.db.UpdateMetric(c, client.Metrics{
+			ID:    requestBody.ID,
+			MType: strings.ToLower(requestBody.MType),
+			Delta: nil,
+			Value: requestBody.Value,
+		})
+		if err != nil {
+			log.Println(err)
+		}
+	} else if strings.ToLower(requestBody.MType) == "counter" {
 		if requestBody.Hash != "" {
 			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%v", requestBody.ID, *requestBody.Delta), []byte(h.key))
 			if err != nil {
@@ -234,10 +251,46 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 				return nil, err
 			}
 		}
+		h.s.SaveCountMetric(client.Metrics{
+			ID:    requestBody.ID,
+			MType: strings.ToLower(requestBody.MType),
+			Delta: requestBody.Delta,
+		})
+		err := h.db.UpdateMetric(c, client.Metrics{
+			ID:    requestBody.ID,
+			MType: strings.ToLower(requestBody.MType),
+			Delta: requestBody.Delta,
+			Value: nil,
+		})
+		if err != nil {
+			log.Println(err)
+		}
 	} else {
 		w.WriteHeader(http.StatusNotImplemented)
 		return nil, middleware.ErrNotFound
 	}
+	w.WriteHeader(http.StatusOK)
+
+	return nil, nil
+}
+
+func (h *routerGroup) UpdateMetrics(c *gin.Context) ([]byte, error) {
+	r := c.Request
+	w := c.Writer
+	log.Println("UpdateMetric Metrics", r.URL)
+
+	var requestBody []client.Metrics
+
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return nil, err
+	}
+
+	err := h.db.UpdateMetrics(requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
 	w.WriteHeader(http.StatusOK)
 
 	return nil, nil
