@@ -17,10 +17,17 @@ type Metrics struct {
 }
 
 func (db *DB) CreateTable(ctx context.Context) error {
-	_, err := db.db.Query(checkMetricDB)
+	row, err := db.db.Query(checkMetricDB)
+	err = row.Close()
+	if err != nil {
+		return err
+	}
 	if err != nil {
 		if err.Error() == `pq: relation "metrics" does not exist` {
 			_, err = db.db.ExecContext(ctx, createTable)
+			if err != nil {
+				panic(err)
+			}
 		} else {
 			return err
 		}
@@ -88,9 +95,9 @@ func (db *DB) GetCounterMetric(ctx context.Context, metricId string) (int64, err
 	return result, err
 }
 
-func (db *DB) GetGaugeMetric(ctx context.Context, metricId string) (float64, error) {
+func (db *DB) GetGaugeMetric(ctx context.Context, metricID string) (float64, error) {
 	var result float64
-	row := db.db.QueryRowContext(ctx, queryGetGaugeMetricValue, metricId)
+	row := db.db.QueryRowContext(ctx, queryGetGaugeMetricValue, metricID)
 	err := row.Scan(&result)
 	if err != nil {
 		log.Fatal(err)

@@ -89,6 +89,14 @@ func sendMetrics(jobs <-chan []models.Metrics, resp *client.Client) {
 						}
 						metrics.Hash = hashValue
 					}
+				} else if metrics.Delta != nil {
+					if resp.Config.Key != "" {
+						hashValue, err = hash(fmt.Sprintf("%s:counter:%v", metrics.ID, *metrics.Delta), []byte(resp.Config.Key))
+						if err != nil {
+							log.Fatal(err)
+						}
+						metrics.Hash = hashValue
+					}
 				}
 
 				log.Println("body: ", metrics)

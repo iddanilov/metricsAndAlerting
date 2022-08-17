@@ -40,7 +40,7 @@ func (h *routerGroup) Routes() {
 	group.Use()
 	{
 		group.GET("/", middleware.Middleware(h.MetricList))
-		group.POST("/update/:type/:name/:value", middleware.Middleware(h.UpdateMetricsByPath))
+		group.POST("/update/:type/:name/:value", middleware.Middleware(h.UpdateMetricByPath))
 		group.POST("/update/", middleware.Middleware(h.UpdateMetric))
 		group.POST("/updates/", middleware.Middleware(h.UpdateMetrics))
 		group.POST("/value/", middleware.Middleware(h.GetMetric))
@@ -80,9 +80,13 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return nil, err
 		}
-		requestBody.Hash = hashValue
+		responseBody.Hash = hashValue
 	}
 	responseBody, err = h.db.GetMetric(c, requestBody.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return nil, err
+	}
 	w.Header().Set("Content-Type", "application/json")
 	body, err := json.Marshal(responseBody)
 	if err != nil {
@@ -136,7 +140,7 @@ func (h *routerGroup) MetricList(c *gin.Context) ([]byte, error) {
 	return []byte(createResponse(h.s)), nil
 }
 
-func (h *routerGroup) UpdateMetricsByPath(c *gin.Context) ([]byte, error) {
+func (h *routerGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	mType := c.Params.ByName("type")
@@ -146,7 +150,7 @@ func (h *routerGroup) UpdateMetricsByPath(c *gin.Context) ([]byte, error) {
 		w.WriteHeader(http.StatusNotFound)
 		return nil, middleware.ErrNotFound
 	}
-	log.Println("UpdateMetricsByPath Metrics", r.URL)
+	log.Println("UpdateMetricByPath Metrics", r.URL)
 
 	if strings.ToLower(mType) == "gauge" {
 		v, err := strconv.ParseFloat(mValue, 64)
