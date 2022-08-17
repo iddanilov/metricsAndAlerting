@@ -149,12 +149,23 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 		response = []byte(fmt.Sprintf("%v", result))
 		w.WriteHeader(http.StatusOK)
 	} else if strings.ToLower(mType) == "counter" {
-		result, err := h.db.GetCounterMetric(c, name)
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusNotFound)
-			return nil, middleware.ErrNotFound
+		var result int64
+		if h.useDB {
+			result, err = h.db.GetCounterMetric(c, name)
+			if err != nil {
+				log.Println(err)
+				w.WriteHeader(http.StatusNotFound)
+				return nil, middleware.ErrNotFound
+			}
+		} else {
+			metric, ok := h.s.Metrics[name]
+			if !ok {
+				w.WriteHeader(http.StatusNotFound)
+				return nil, middleware.ErrNotFound
+			}
+			result = *metric.Delta
 		}
+
 		response = []byte(fmt.Sprintf("%v", result))
 		w.WriteHeader(http.StatusOK)
 	} else {

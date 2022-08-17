@@ -141,7 +141,7 @@ func TestSendGauge(t *testing.T) {
 
 			r := gin.New()
 			r.RedirectTrailingSlash = false
-			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db)
+			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, false)
 			rg.Routes()
 
 			// запускаем сервер
@@ -284,7 +284,7 @@ func TestSendCounter(t *testing.T) {
 			}
 			r := gin.New()
 			r.RedirectTrailingSlash = false
-			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db)
+			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, false)
 			rg.Routes()
 
 			// запускаем сервер
@@ -376,7 +376,7 @@ func TestGetMetric(t *testing.T) {
 			if err != nil {
 				panic(err)
 			}
-			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db)
+			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, false)
 			rg.Routes()
 
 			// запускаем сервер
@@ -548,7 +548,7 @@ func TestGetMetrics(t *testing.T) {
 			}
 			r := gin.New()
 			r.RedirectTrailingSlash = false
-			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db)
+			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, false)
 			rg.Routes()
 
 			// запускаем сервер
