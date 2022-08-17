@@ -37,7 +37,9 @@ func (db *DB) CreateTable(ctx context.Context) error {
 
 func (db *DB) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
 	_, err := db.db.ExecContext(ctx, queryUpdateMetrics, metrics.ID, metrics.MType, metrics.Delta, metrics.Value)
-	log.Println("Can't Update Metric")
+	if err != nil {
+		log.Println("Can't Update Metric")
+	}
 	return err
 }
 

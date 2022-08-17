@@ -16,6 +16,7 @@ import (
 
 func main() {
 	var useDB bool
+	var err error
 	storage := &db.DB{}
 	log.Println("create router")
 
@@ -30,7 +31,7 @@ func main() {
 	log.Println(cfg.DSN)
 	log.Println(useDB)
 	if useDB {
-		storage, err := db.NewDB(cfg.DSN)
+		storage, err = db.NewDB(cfg.DSN)
 		if err != nil {
 			log.Println(err)
 			panic(err)
