@@ -132,7 +132,7 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 
 	var response []byte
 	if strings.ToLower(mType) == "gauge" {
-		var result float64
+		var result *float64
 		if h.useDB {
 			result, err = h.db.GetGaugeMetric(c, name)
 			if err != nil {
@@ -150,13 +150,13 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
-			result = *metric.Value
+			result = metric.Value
 		}
 
 		response = []byte(fmt.Sprintf("%v", result))
 		w.WriteHeader(http.StatusOK)
 	} else if strings.ToLower(mType) == "counter" {
-		var result int64
+		var result *int64
 		if h.useDB {
 			result, err = h.db.GetCounterMetric(c, name)
 			if err != nil {
@@ -174,7 +174,7 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
-			result = *metric.Delta
+			result = metric.Delta
 		}
 
 		response = []byte(fmt.Sprintf("%v", result))

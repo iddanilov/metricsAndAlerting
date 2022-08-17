@@ -12,13 +12,13 @@ CREATE TABLE metrics (
 	         value FLOAT);`
 
 	queryGetCounterMetricValue = `
-SELECT delta FROM metrics WHERE $1 = id
+SELECT delta FROM metrics WHERE id = $1 
 `
 	queryGetMetric = `
 SELECT id, m_type, delta, value FROM metrics WHERE $1 = id
 `
 	queryGetGaugeMetricValue = `
-SELECT value FROM metrics WHERE $1 = id
+SELECT value FROM metrics WHERE id = $1
 `
 
 	queryUpdateMetrics = `

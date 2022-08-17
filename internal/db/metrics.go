@@ -91,22 +91,24 @@ func (db *DB) GetMetric(ctx context.Context, metricID string) (models.Metrics, e
 	return dbMetric, nil
 }
 
-func (db *DB) GetCounterMetric(ctx context.Context, metricID string) (int64, error) {
+func (db *DB) GetCounterMetric(ctx context.Context, metricID string) (*int64, error) {
 	var result int64
 	row := db.db.QueryRowContext(ctx, queryGetCounterMetricValue, metricID)
 	err := row.Scan(&result)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return nil, err
 	}
-	return result, err
+	return &result, err
 }
 
-func (db *DB) GetGaugeMetric(ctx context.Context, metricID string) (float64, error) {
+func (db *DB) GetGaugeMetric(ctx context.Context, metricID string) (*float64, error) {
 	var result float64
 	row := db.db.QueryRowContext(ctx, queryGetGaugeMetricValue, metricID)
 	err := row.Scan(&result)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return nil, err
 	}
-	return result, err
+	return &result, err
 }
