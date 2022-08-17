@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -67,7 +68,11 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	log.Println("Get Metrics")
-	log.Println("Get Metrics", r.Body)
+	log.Println("Metrics Body: ", r.Body)
+	if r.Body == nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return nil, errors.New("body is nil")
+	}
 	requestBody := client.Metrics{}
 	responseBody := client.Metrics{}
 
@@ -257,6 +262,10 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	log.Println("UpdateMetric Metrics", r.URL)
+	if r.Body == nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return nil, errors.New("body is nil")
+	}
 	log.Println("Metrics Body: ", r.Body)
 
 	requestBody := client.Metrics{}
