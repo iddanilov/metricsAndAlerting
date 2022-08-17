@@ -28,6 +28,8 @@ func main() {
 	if cfg.DSN != "" {
 		useDB = true
 	}
+	log.Println(cfg.DSN)
+	log.Println(useDB)
 	if useDB {
 		storage, err := db.NewDB(cfg.DSN)
 		if err != nil {
