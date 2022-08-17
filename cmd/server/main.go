@@ -19,8 +19,7 @@ func main() {
 	storage := &db.DB{}
 	log.Println("create router")
 
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	cfg := server.NewConfig()
 	file := server.NewStorages(cfg)
@@ -55,6 +54,7 @@ func main() {
 				os.Exit(0)
 			default:
 				<-reportIntervalTicker.C
+				log.Println("Write data in file")
 				err := file.SaveMetricInFile(ctx)
 				if err != nil {
 					log.Println(err)
