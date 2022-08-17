@@ -17,12 +17,15 @@ type Metrics struct {
 }
 
 func (db *DB) CreateTable(ctx context.Context) error {
-	_, err := db.db.Query(`select * from metrics;`)
+	_, err := db.db.Query(checkMetricDB)
 	if err != nil {
-		_, err = db.db.ExecContext(ctx, createTable)
-		return err
+		if err.Error() == `pq: relation "metrics" does not exist` {
+			_, err = db.db.ExecContext(ctx, createTable)
+		} else {
+			return err
+		}
 	}
-	return err
+	return nil
 }
 
 func (db *DB) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
@@ -32,7 +35,7 @@ func (db *DB) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
 
 func (db *DB) UpdateMetrics(metrics []models.Metrics) error {
 	if db.db == nil {
-		return errors.New("You haven`t opened the database connection")
+		return errors.New("you haven`t opened the database connection")
 	}
 	tx, err := db.db.Begin()
 	if err != nil {
@@ -65,9 +68,9 @@ func (db *DB) UpdateMetrics(metrics []models.Metrics) error {
 
 }
 
-func (db *DB) GetMetric(ctx context.Context, metricId string) (models.Metrics, error) {
+func (db *DB) GetMetric(ctx context.Context, metricID string) (models.Metrics, error) {
 	var dbMetric models.Metrics
-	row := db.db.QueryRowContext(ctx, queryGetMetric, metricId)
+	row := db.db.QueryRowContext(ctx, queryGetMetric, metricID)
 	err := row.Scan(&dbMetric.ID, &dbMetric.MType, &dbMetric.Delta, &dbMetric.Value)
 	if err != nil {
 		return models.Metrics{}, err

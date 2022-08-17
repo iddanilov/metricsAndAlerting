@@ -1,6 +1,9 @@
 package db
 
 const (
+	checkMetricDB = `
+select * from metrics;`
+
 	createTable = `
 CREATE TABLE metrics (
 	         id varchar(20) primary key,
