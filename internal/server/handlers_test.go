@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -135,7 +134,7 @@ func TestSendGauge(t *testing.T) {
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
-			db, err := db.NewDB(os.Getenv("DATABASE_DSN"))
+			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 			if err != nil {
 				panic(err)
 			}
@@ -279,7 +278,7 @@ func TestSendCounter(t *testing.T) {
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
-			db, err := db.NewDB(os.Getenv("DATABASE_DSN"))
+			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 			if err != nil {
 				panic(err)
 			}
@@ -373,7 +372,7 @@ func TestGetMetric(t *testing.T) {
 			}
 			r := gin.New()
 			r.RedirectTrailingSlash = false
-			db, err := db.NewDB(os.Getenv("DATABASE_DSN"))
+			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 			if err != nil {
 				panic(err)
 			}
@@ -460,7 +459,7 @@ func TestGetGauge(t *testing.T) {
 			if !tt.counterMetricResult.MetricISEmpty() {
 				storage.Metrics[tt.counterMetricResult.ID] = client.Metrics{ID: tt.counterMetricResult.ID, MType: tt.counterMetricResult.MType, Value: tt.counterMetricResult.Value, Delta: tt.counterMetricResult.Delta}
 			}
-			db, err := db.NewDB(os.Getenv("DATABASE_DSN"))
+			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 			if err != nil {
 				panic(err)
 			}
@@ -543,7 +542,7 @@ func TestGetMetrics(t *testing.T) {
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
-			db, err := db.NewDB(os.Getenv("DATABASE_DSN"))
+			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 			if err != nil {
 				panic(err)
 			}
