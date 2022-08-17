@@ -76,11 +76,10 @@ func (s *Storage) SaveGaugeMetric(metric *client.Metrics) {
 func (s *Storage) SaveCountMetric(metric client.Metrics) {
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
-	result, ok := s.Metrics[metric.ID]
-	if ok {
-		*result.Delta = *result.Delta + *metric.Delta
-		s.Metrics[metric.ID] = result
-	} else {
-		s.Metrics[metric.ID] = metric
+	result := s.Metrics[metric.ID]
+	if result.Delta != nil {
+		*metric.Delta = *metric.Delta + *result.Delta
 	}
+	s.Metrics[metric.ID] = metric
+
 }

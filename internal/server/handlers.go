@@ -6,9 +6,7 @@ import (
 	"crypto/cipher"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -63,22 +61,11 @@ func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
 }
 
 func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
-
 	var hashValue string
 	var err error
 	r := c.Request
 	w := c.Writer
-	log.Println("Get Metrics")
-	log.Println("Metrics Body: ", r.Body)
-	x, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return nil, err
-	}
-	if fmt.Sprintf("%s", string(x)) == "" {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return nil, errors.New("body is nil")
-	}
+
 	requestBody := client.Metrics{}
 	responseBody := client.Metrics{}
 
@@ -113,6 +100,10 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 		}
 		response.MType = strings.ToLower(response.MType)
 		responseBody = response
+	}
+	if strings.ToLower(responseBody.MType) != strings.ToLower(requestBody.MType) {
+		http.Error(w, "type is not correct", http.StatusNotFound)
+		return nil, err
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -155,6 +146,10 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
+			if metric.Value == nil {
+				w.WriteHeader(http.StatusNotFound)
+				return nil, middleware.ErrNotFound
+			}
 			result = *metric.Value
 		}
 
@@ -172,6 +167,10 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 		} else {
 			metric, ok := h.s.Metrics[name]
 			if !ok {
+				w.WriteHeader(http.StatusNotFound)
+				return nil, middleware.ErrNotFound
+			}
+			if metric.Delta == nil {
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
@@ -197,7 +196,6 @@ func (h *routerGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	log.Println("UpdateMetricByPath Metrics", r.URL)
-	log.Println("Metrics Body: ", r.Body)
 	mType := c.Params.ByName("type")
 	name := c.Params.ByName("name")
 	mValue := c.Params.ByName("value")
@@ -267,23 +265,8 @@ func (h *routerGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
-	log.Println("UpdateMetric Metrics", r.URL)
-	if r.Body == nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return nil, errors.New("body is nil")
-	}
-	log.Println("Metrics Body: ", r.Body)
-
 	requestBody := client.Metrics{}
-	x, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-		return nil, err
-	}
-	if fmt.Sprintf("%s", string(x)) == "" {
-		http.Error(w, "Empty request", http.StatusNotFound)
-		return nil, err
-	}
+	log.Println("UpdateMetric Metrics", r.URL)
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
