@@ -43,7 +43,7 @@ func main() {
 				os.Exit(0)
 			default:
 				<-reportIntervalTicker.C
-				err := file.SaveMetricInFile(ctx)
+				err = file.SaveMetricInFile(ctx)
 				if err != nil {
 					log.Fatal(err)
 				}

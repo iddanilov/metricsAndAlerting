@@ -246,7 +246,7 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 		}
 	} else if strings.ToLower(requestBody.MType) == "counter" {
 		if requestBody.Hash != "" {
-			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%v", requestBody.ID, *requestBody.Delta), []byte(h.key))
+			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:counter:%v", requestBody.ID, *requestBody.Delta), []byte(h.key))
 			if err != nil {
 				return nil, err
 			}
