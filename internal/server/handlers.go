@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -69,7 +70,12 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	w := c.Writer
 	log.Println("Get Metrics")
 	log.Println("Metrics Body: ", r.Body)
-	if r.Body == nil {
+	x, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return nil, err
+	}
+	if fmt.Sprintf("%s", string(x)) == "" {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return nil, errors.New("body is nil")
 	}
@@ -269,6 +275,15 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	log.Println("Metrics Body: ", r.Body)
 
 	requestBody := client.Metrics{}
+	x, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return nil, err
+	}
+	if fmt.Sprintf("%s", string(x)) == "" {
+		http.Error(w, "Empty request", http.StatusNotFound)
+		return nil, err
+	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
