@@ -214,7 +214,7 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	requestBody := client.Metrics{}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Bad request", http.StatusBadRequest)
 		return nil, err
 	}
 

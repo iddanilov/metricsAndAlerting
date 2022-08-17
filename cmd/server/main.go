@@ -17,7 +17,8 @@ import (
 func main() {
 	log.Println("create router")
 
-	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
 
 	cfg := server.NewConfig()
 	file := server.NewStorages(cfg)
