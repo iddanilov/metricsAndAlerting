@@ -18,7 +18,6 @@ type Metrics struct {
 
 func (db *DB) CreateTable(ctx context.Context) error {
 	row, err := db.db.Query(checkMetricDB)
-	defer row.Close()
 	if err != nil {
 		if err.Error() == `pq: relation "metrics" does not exist` {
 			_, err := db.db.ExecContext(ctx, createTable)
@@ -29,6 +28,7 @@ func (db *DB) CreateTable(ctx context.Context) error {
 			return err
 		}
 	}
+	defer row.Close()
 	return nil
 }
 
