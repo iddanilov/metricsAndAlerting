@@ -20,18 +20,20 @@ import (
 )
 
 type routerGroup struct {
-	rg  *gin.RouterGroup
-	s   *Storage
-	key string
-	db  *db.DB
+	rg    *gin.RouterGroup
+	s     *Storage
+	key   string
+	db    *db.DB
+	useDB bool
 }
 
-func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *db.DB) *routerGroup {
+func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *db.DB, useDB bool) *routerGroup {
 	return &routerGroup{
-		rg:  rg,
-		s:   s,
-		key: key,
-		db:  db,
+		rg:    rg,
+		s:     s,
+		key:   key,
+		db:    db,
+		useDB: useDB,
 	}
 }
 
@@ -71,7 +73,7 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		log.Println(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return nil, err
 	}
 
@@ -82,16 +84,26 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 		hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
 		if err != nil {
 			log.Println(err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return nil, err
 		}
 		responseBody.Hash = hashValue
 	}
-	responseBody, err = h.db.GetMetric(c, requestBody.ID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return nil, err
+	if h.useDB {
+		responseBody, err = h.db.GetMetric(c, requestBody.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return nil, err
+		}
+	} else {
+		response, ok := h.s.Metrics[requestBody.ID]
+		if !ok {
+			return nil, middleware.ErrNotFound
+		}
+		response.MType = strings.ToLower(response.MType)
+		responseBody = response
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	body, err := json.Marshal(responseBody)
 	if err != nil {
@@ -106,6 +118,7 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
+	var err error
 	log.Println("Get Metrics", r.URL)
 	mType := c.Params.ByName("type")
 	name := c.Params.ByName("name")
@@ -116,11 +129,21 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 
 	var response []byte
 	if strings.ToLower(mType) == "gauge" {
-		result, err := h.db.GetGaugeMetric(c, name)
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusNotFound)
-			return nil, middleware.ErrNotFound
+		var result float64
+		if h.useDB {
+			result, err = h.db.GetGaugeMetric(c, name)
+			if err != nil {
+				log.Println(err)
+				w.WriteHeader(http.StatusNotFound)
+				return nil, middleware.ErrNotFound
+			}
+		} else {
+			metric, ok := h.s.Metrics[name]
+			if !ok {
+				w.WriteHeader(http.StatusNotFound)
+				return nil, middleware.ErrNotFound
+			}
+			result = *metric.Value
 		}
 
 		response = []byte(fmt.Sprintf("%v", result))
@@ -170,12 +193,14 @@ func (h *routerGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 			MType: mType,
 			Value: &v,
 		})
-		err = h.db.UpdateMetric(c, client.Metrics{
-			ID:    name,
-			MType: mType,
-			Delta: nil,
-			Value: &v,
-		})
+		if h.useDB {
+			err = h.db.UpdateMetric(c, client.Metrics{
+				ID:    name,
+				MType: mType,
+				Delta: nil,
+				Value: &v,
+			})
+		}
 		if err != nil {
 			log.Println(err)
 		}
@@ -190,12 +215,14 @@ func (h *routerGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 			MType: mType,
 			Delta: &v,
 		})
-		err = h.db.UpdateMetric(c, client.Metrics{
-			ID:    name,
-			MType: mType,
-			Delta: &v,
-			Value: nil,
-		})
+		if h.useDB {
+			err = h.db.UpdateMetric(c, client.Metrics{
+				ID:    name,
+				MType: mType,
+				Delta: &v,
+				Value: nil,
+			})
+		}
 		if err != nil {
 			log.Println(err)
 		}
@@ -242,15 +269,18 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			MType: strings.ToLower(requestBody.MType),
 			Value: requestBody.Value,
 		})
-		err := h.db.UpdateMetric(c, client.Metrics{
-			ID:    requestBody.ID,
-			MType: strings.ToLower(requestBody.MType),
-			Delta: nil,
-			Value: requestBody.Value,
-		})
-		if err != nil {
-			log.Println(err)
+		if h.useDB {
+			err := h.db.UpdateMetric(c, client.Metrics{
+				ID:    requestBody.ID,
+				MType: strings.ToLower(requestBody.MType),
+				Delta: nil,
+				Value: requestBody.Value,
+			})
+			if err != nil {
+				log.Println(err)
+			}
 		}
+
 	} else if strings.ToLower(requestBody.MType) == "counter" {
 		if requestBody.Hash != "" {
 			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:counter:%v", requestBody.ID, *requestBody.Delta), []byte(h.key))
@@ -267,14 +297,16 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			MType: strings.ToLower(requestBody.MType),
 			Delta: requestBody.Delta,
 		})
-		err := h.db.UpdateMetric(c, client.Metrics{
-			ID:    requestBody.ID,
-			MType: strings.ToLower(requestBody.MType),
-			Delta: requestBody.Delta,
-			Value: nil,
-		})
-		if err != nil {
-			log.Println(err)
+		if h.useDB {
+			err := h.db.UpdateMetric(c, client.Metrics{
+				ID:    requestBody.ID,
+				MType: strings.ToLower(requestBody.MType),
+				Delta: requestBody.Delta,
+				Value: nil,
+			})
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	} else {
 		w.WriteHeader(http.StatusNotImplemented)
@@ -296,10 +328,11 @@ func (h *routerGroup) UpdateMetrics(c *gin.Context) ([]byte, error) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, err
 	}
-
-	err := h.db.UpdateMetrics(requestBody)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if h.useDB {
+		err := h.db.UpdateMetrics(requestBody)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)

@@ -15,6 +15,8 @@ import (
 )
 
 func main() {
+	var useDB bool
+	storage := &db.DB{}
 	log.Println("create router")
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -23,15 +25,20 @@ func main() {
 	cfg := server.NewConfig()
 	file := server.NewStorages(cfg)
 
-	storage, err := db.NewDB(cfg.DSN)
-	if err != nil {
-		log.Println(err)
-		panic(err)
+	if cfg.DSN != "" {
+		useDB = true
 	}
-	err = storage.CreateTable(ctx)
-	if err != nil {
-		log.Println(err)
-		panic(err)
+	if useDB {
+		storage, err := db.NewDB(cfg.DSN)
+		if err != nil {
+			log.Println(err)
+			panic(err)
+		}
+		err = storage.CreateTable(ctx)
+		if err != nil {
+			log.Println(err)
+			panic(err)
+		}
 	}
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
@@ -46,7 +53,7 @@ func main() {
 				os.Exit(0)
 			default:
 				<-reportIntervalTicker.C
-				err = file.SaveMetricInFile(ctx)
+				err := file.SaveMetricInFile(ctx)
 				if err != nil {
 					log.Println(err)
 				}
@@ -57,7 +64,7 @@ func main() {
 	r := gin.New()
 	r.RedirectTrailingSlash = false
 
-	rg := server.NewRouterGroup(&r.RouterGroup, file, cfg.Key, storage)
+	rg := server.NewRouterGroup(&r.RouterGroup, file, cfg.Key, storage, useDB)
 	rg.Routes()
 
 	r.Run(cfg.Address)
