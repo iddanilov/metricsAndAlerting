@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/metricsAndAlerting/internal/db"
 	"log"
 	"net/http"
 	"strconv"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/metricsAndAlerting/internal/db"
 	"github.com/metricsAndAlerting/internal/middleware"
 	client "github.com/metricsAndAlerting/internal/models"
 )

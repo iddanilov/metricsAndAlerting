@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/metricsAndAlerting/internal/models"
 	"log"
+
+	"github.com/metricsAndAlerting/internal/models"
 )
 
 type Metrics struct {

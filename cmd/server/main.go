@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"github.com/metricsAndAlerting/internal/db"
 	"log"
 	"os"
 	"os/signal"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/metricsAndAlerting/internal/db"
 	"github.com/metricsAndAlerting/internal/server"
 )
 

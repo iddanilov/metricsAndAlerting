@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/metricsAndAlerting/internal/db"
 	client "github.com/metricsAndAlerting/internal/models"
 )
 
@@ -133,9 +135,14 @@ func TestSendGauge(t *testing.T) {
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
+			db, err := db.NewDB(os.Getenv("DATABASE_DSN"))
+			if err != nil {
+				panic(err)
+			}
+
 			r := gin.New()
 			r.RedirectTrailingSlash = false
-			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL")
+			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db)
 			rg.Routes()
 
 			// запускаем сервер
@@ -272,9 +279,13 @@ func TestSendCounter(t *testing.T) {
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
+			db, err := db.NewDB(os.Getenv("DATABASE_DSN"))
+			if err != nil {
+				panic(err)
+			}
 			r := gin.New()
 			r.RedirectTrailingSlash = false
-			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL")
+			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db)
 			rg.Routes()
 
 			// запускаем сервер
@@ -362,7 +373,11 @@ func TestGetMetric(t *testing.T) {
 			}
 			r := gin.New()
 			r.RedirectTrailingSlash = false
-			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL")
+			db, err := db.NewDB(os.Getenv("DATABASE_DSN"))
+			if err != nil {
+				panic(err)
+			}
+			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db)
 			rg.Routes()
 
 			// запускаем сервер
@@ -445,9 +460,14 @@ func TestGetGauge(t *testing.T) {
 			if !tt.counterMetricResult.MetricISEmpty() {
 				storage.Metrics[tt.counterMetricResult.ID] = client.Metrics{ID: tt.counterMetricResult.ID, MType: tt.counterMetricResult.MType, Value: tt.counterMetricResult.Value, Delta: tt.counterMetricResult.Delta}
 			}
+			db, err := db.NewDB(os.Getenv("DATABASE_DSN"))
+			if err != nil {
+				panic(err)
+			}
+
 			r := gin.New()
 			r.RedirectTrailingSlash = false
-			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL")
+			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db)
 			rg.Routes()
 
 			// запускаем сервер
@@ -523,9 +543,13 @@ func TestGetMetrics(t *testing.T) {
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
+			db, err := db.NewDB(os.Getenv("DATABASE_DSN"))
+			if err != nil {
+				panic(err)
+			}
 			r := gin.New()
 			r.RedirectTrailingSlash = false
-			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL")
+			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db)
 			rg.Routes()
 
 			// запускаем сервер
