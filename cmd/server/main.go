@@ -27,10 +27,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err = storage.CreateTable(ctx)
-	if err != nil {
-		panic(err)
-	}
+	//err = storage.CreateTable(ctx)
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
 	times := make(chan int64, 1)
