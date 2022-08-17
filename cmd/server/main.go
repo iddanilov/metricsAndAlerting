@@ -3,9 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +17,9 @@ func main() {
 	storage := &db.DB{}
 	log.Println("create router")
 
-	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	//ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+
+	ctx := context.Background()
 
 	cfg := server.NewConfig()
 	file := server.NewStorages(cfg)
@@ -44,23 +43,23 @@ func main() {
 	}
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
-	times := make(chan int64, 1)
+	//times := make(chan int64, 1)
 
 	go func(ctx context.Context) {
 		for {
-			select {
-			case <-ctx.Done():
-				close(times)
-				log.Println("Stop program")
-				os.Exit(0)
-			default:
-				<-reportIntervalTicker.C
-				log.Println("Write data in file")
-				err := file.SaveMetricInFile(ctx)
-				if err != nil {
-					log.Println(err)
-				}
+			//select {
+			//case <-ctx.Done():
+			//	close(times)
+			//	log.Println("Stop program")
+			//	os.Exit(0)
+			//default:
+			<-reportIntervalTicker.C
+			log.Println("Write data in file")
+			err := file.SaveMetricInFile(ctx)
+			if err != nil {
+				log.Println(err)
 			}
+			//	}
 		}
 
 	}(ctx)
