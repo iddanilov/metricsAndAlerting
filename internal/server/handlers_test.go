@@ -466,7 +466,7 @@ func TestGetGauge(t *testing.T) {
 
 			r := gin.New()
 			r.RedirectTrailingSlash = false
-			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db)
+			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, false)
 			rg.Routes()
 
 			// запускаем сервер
