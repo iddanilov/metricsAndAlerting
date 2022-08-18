@@ -181,7 +181,7 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 			result = metric.Delta
 		}
 
-		response = []byte(fmt.Sprintf("%v", result))
+		response = []byte(fmt.Sprintf("%v", *result))
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusNotFound)
