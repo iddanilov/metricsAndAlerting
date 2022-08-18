@@ -287,7 +287,7 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
 		}
-		if requestBody.Hash != "" {
+		if h.key != "" {
 			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
 			if err != nil {
 				log.Println(err)
@@ -320,7 +320,7 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
 		}
-		if requestBody.Hash != "" {
+		if h.key != "" {
 			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:counter:%v", requestBody.ID, *requestBody.Delta), []byte(h.key))
 			if err != nil {
 				return nil, err
