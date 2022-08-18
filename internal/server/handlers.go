@@ -47,7 +47,7 @@ func (h *routerGroup) Routes() {
 		group.POST("/updates/", middleware.Middleware(h.UpdateMetrics))
 		group.POST("/value/", middleware.Middleware(h.GetMetric))
 		group.GET("/value/:type/:name", middleware.Middleware(h.GetMetricByPath))
-		group.GET("/ping", middleware.Middleware(h.Ping))
+		group.GET("/ping/", middleware.Middleware(h.Ping))
 	}
 }
 
@@ -283,13 +283,17 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	}
 
 	if strings.ToLower(requestBody.MType) == "gauge" {
+		if requestBody.Value == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return nil, middleware.ErrNotFound
+		}
 		if requestBody.Hash != "" {
 			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
 			if err != nil {
 				log.Println(err)
 				return nil, err
 			}
-			if ok {
+			if !ok {
 				w.WriteHeader(http.StatusBadRequest)
 				return nil, err
 			}
@@ -312,12 +316,16 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 		}
 
 	} else if strings.ToLower(requestBody.MType) == "counter" {
+		if requestBody.Delta == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return nil, middleware.ErrNotFound
+		}
 		if requestBody.Hash != "" {
 			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:counter:%v", requestBody.ID, *requestBody.Delta), []byte(h.key))
 			if err != nil {
 				return nil, err
 			}
-			if ok {
+			if !ok {
 				w.WriteHeader(http.StatusBadRequest)
 				return nil, err
 			}
