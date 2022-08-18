@@ -157,7 +157,7 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 			result = metric.Value
 		}
 
-		response = []byte(fmt.Sprintf("%v", result))
+		response = []byte(fmt.Sprintf("%v", *result))
 		w.WriteHeader(http.StatusOK)
 	} else if strings.ToLower(mType) == "counter" {
 		var result *int64
