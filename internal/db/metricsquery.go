@@ -6,7 +6,7 @@ select * from metrics;`
 
 	createTable = `
 CREATE TABLE metrics (
-	         id varchar(20) primary key,
+	         id varchar primary key,
 	         m_type varchar NOT NULL,
 	         delta bigint,
 	         value double precision);`
