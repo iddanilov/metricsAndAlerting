@@ -20,7 +20,7 @@ var (
 	Address        = flag.StringP("a", "a", "127.0.0.1:8080", "help message for flagname")
 	PollInterval   = flag.DurationP("p", "p", 2*time.Second, "help message for flagname")
 	ReportInterval = flag.DurationP("r", "r", 10*time.Second, "help message for flagname")
-	Key            = flag.StringP("k", "k", "LOOOOOOOOOOOOOOL", "help message for KEY")
+	Key            = flag.StringP("k", "k", "", "help message for KEY")
 )
 
 type Config struct {
