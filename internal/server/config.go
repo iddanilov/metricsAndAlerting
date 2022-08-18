@@ -16,8 +16,8 @@ var (
 	StoreInterval = flag.DurationP("i", "i", 1*time.Second, "help message for flagname")
 	Restore       = flag.BoolP("r", "r", true, "help message for flagname")
 	Key           = flag.StringP("k", "k", "", "help message for KEY")
-	DSN           = flag.StringP("d", "d", "", "help message for KEY")
-	//DSN = flag.StringP("d", "d", "host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable", "help message for KEY")
+	//DSN           = flag.StringP("d", "d", "", "help message for KEY")
+	DSN = flag.StringP("d", "d", "host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable", "help message for KEY")
 )
 
 type Config struct {

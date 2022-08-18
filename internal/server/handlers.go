@@ -47,15 +47,20 @@ func (h *routerGroup) Routes() {
 		group.POST("/updates/", middleware.Middleware(h.UpdateMetrics))
 		group.POST("/value/", middleware.Middleware(h.GetMetric))
 		group.GET("/value/:type/:name", middleware.Middleware(h.GetMetricByPath))
-		group.GET("/ping/", middleware.Middleware(h.Ping))
+		group.GET("/ping", middleware.Middleware(h.Ping))
 	}
 }
 
 func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
 	log.Println("Ping")
-	if err := h.db.DBPing(c); err != nil {
-		log.Println(err)
-		return nil, middleware.DisconnectDB
+	if h.useDB {
+		if err := h.db.DBPing(c); err != nil {
+			log.Println(err)
+			return nil, middleware.DisconnectDB
+		}
+	} else {
+		c.Writer.WriteHeader(http.StatusNotFound)
+		return nil, middleware.ErrNotFound
 	}
 	return nil, nil
 }
