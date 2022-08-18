@@ -13,9 +13,9 @@ import (
 var (
 	Address       = flag.StringP("a", "a", "127.0.0.1:8080", "help message for flagname")
 	StoreFile     = flag.StringP("f", "f", "tmp/devops-metrics-db.json", "help message for flagname")
-	StoreInterval = flag.DurationP("i", "i", 1*time.Second, "help message for flagname")
+	StoreInterval = flag.DurationP("i", "i", 300*time.Second, "help message for flagname")
 	Restore       = flag.BoolP("r", "r", true, "help message for flagname")
-	Key           = flag.StringP("k", "k", "LOOOOOOOOOOOOOOL", "help message for KEY")
+	Key           = flag.StringP("k", "k", "", "help message for KEY")
 	DSN           = flag.StringP("d", "d", "", "help message for KEY")
 	//DSN = flag.StringP("d", "d", "host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable", "help message for KEY")
 )
