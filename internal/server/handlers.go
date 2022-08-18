@@ -83,19 +83,6 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	if requestBody.ID == "" {
 		return nil, middleware.ErrNotFound
 	}
-	if h.key != "" && requestBody.Hash != "" {
-		if strings.ToLower(requestBody.MType) == "gauge" {
-			hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
-		} else {
-			hashValue, err = hashCreate(fmt.Sprintf("%s:counter:%v", requestBody.ID, *requestBody.Delta), []byte(h.key))
-		}
-		if err != nil {
-			log.Println(err)
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return nil, err
-		}
-		responseBody.Hash = hashValue
-	}
 	if h.useDB {
 		responseBody, err = h.db.GetMetric(c, requestBody.ID)
 		if err != nil {
@@ -110,6 +97,20 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 		response.MType = strings.ToLower(response.MType)
 		responseBody = response
 	}
+	if h.key != "" {
+		if strings.ToLower(requestBody.MType) == "gauge" {
+			hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", responseBody.ID, *responseBody.Value), []byte(h.key))
+		} else {
+			hashValue, err = hashCreate(fmt.Sprintf("%s:counter:%v", responseBody.ID, *responseBody.Delta), []byte(h.key))
+		}
+		if err != nil {
+			log.Println(err)
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return nil, err
+		}
+		responseBody.Hash = hashValue
+	}
+
 	if !strings.EqualFold(responseBody.MType, requestBody.MType) {
 		http.Error(w, "type is not correct", http.StatusNotFound)
 		return nil, err
