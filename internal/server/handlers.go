@@ -83,7 +83,7 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	if requestBody.ID == "" {
 		return nil, middleware.ErrNotFound
 	}
-	if requestBody.Hash != "" {
+	if h.key != "" && requestBody.Hash != "" {
 		if strings.ToLower(requestBody.MType) == "gauge" {
 			hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
 		} else {
@@ -287,7 +287,7 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
 		}
-		if h.key != "" {
+		if h.key != "" && requestBody.Hash != "" {
 			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
 			if err != nil {
 				log.Println(err)
@@ -320,7 +320,7 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
 		}
-		if h.key != "" {
+		if h.key != "" && requestBody.Hash != "" {
 			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:counter:%v", requestBody.ID, *requestBody.Delta), []byte(h.key))
 			if err != nil {
 				return nil, err
