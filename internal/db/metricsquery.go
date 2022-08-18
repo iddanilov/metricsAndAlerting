@@ -8,8 +8,8 @@ select * from metrics;`
 CREATE TABLE metrics (
 	         id varchar(20) primary key,
 	         m_type varchar NOT NULL,
-	         delta INT,
-	         value FLOAT);`
+	         delta bigint,
+	         value double precision);`
 
 	queryGetCounterMetricValue = `
 SELECT delta FROM metrics WHERE id = $1 

@@ -28,10 +28,13 @@ func (db *DB) CreateTable(ctx context.Context) error {
 			return err
 		}
 	}
-	if row.Err() != nil {
-		return err
+	if row != nil {
+		if row.Err() != nil {
+			return err
+		}
+		defer row.Close()
 	}
-	defer row.Close()
+
 	return nil
 }
 
