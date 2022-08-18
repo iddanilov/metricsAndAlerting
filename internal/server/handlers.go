@@ -47,7 +47,7 @@ func (h *routerGroup) Routes() {
 		group.POST("/updates/", middleware.Middleware(h.UpdateMetrics))
 		group.POST("/value/", middleware.Middleware(h.GetMetric))
 		group.GET("/value/:type/:name", middleware.Middleware(h.GetMetricByPath))
-		group.GET("/ping/", middleware.Middleware(h.Ping))
+		group.GET("/ping", middleware.Middleware(h.Ping))
 	}
 }
 
