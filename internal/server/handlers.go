@@ -102,7 +102,7 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 		if strings.ToLower(requestBody.MType) == "gauge" {
 			hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", responseBody.ID, *responseBody.Value), []byte(h.key))
 		} else {
-			hashValue, err = hashCreate(fmt.Sprintf("%s:counter:%v", responseBody.ID, *responseBody.Delta), []byte(h.key))
+			hashValue, err = hashCreate(fmt.Sprintf("%s:counter:%d", responseBody.ID, *responseBody.Delta), []byte(h.key))
 		}
 		if err != nil {
 			log.Println(err)
@@ -323,7 +323,7 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			return nil, middleware.ErrNotFound
 		}
 		if h.key != "" && requestBody.Hash != "" {
-			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:counter:%v", requestBody.ID, *requestBody.Delta), []byte(h.key))
+			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:counter:%d", requestBody.ID, *requestBody.Delta), []byte(h.key))
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return nil, err
