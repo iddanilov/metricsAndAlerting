@@ -2,10 +2,8 @@ package server
 
 import (
 	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -382,59 +380,25 @@ func (h *routerGroup) UpdateMetrics(c *gin.Context) ([]byte, error) {
 	return nil, nil
 }
 
-func hashCreate(m string, pass []byte) (string, error) {
-	src := []byte(m)
-	key := sha256.Sum256([]byte(pass))
-
-	aesblock, err := aes.NewCipher(key[:])
-	if err != nil {
-		return "", err
-	}
-
-	aesgcm, err := cipher.NewGCM(aesblock)
-	if err != nil {
-		return "", err
-	}
-
-	nonce := key[len(key)-aesgcm.NonceSize():]
-	dst := aesgcm.Seal(nil, nonce, src, nil)
-	log.Println("x ", dst)
-	return hex.EncodeToString(dst), err
+func hashCreate(m string, key []byte) (string, error) {
+	h := hmac.New(sha256.New, key)
+	_, err := h.Write([]byte(m))
+	return fmt.Sprintf("%x", h.Sum(nil)), err
 }
 
-func hash(bodyHash string, m string, pass []byte) (bool, error) {
-	encrypted, err := hex.DecodeString(bodyHash)
+func hash(bodyHash string, m string, key []byte) (bool, error) {
+	h := hmac.New(sha256.New, key)
+	_, err := h.Write([]byte(m))
 	if err != nil {
-		log.Printf("error: %v\n", err)
 		return false, err
 	}
-	key := sha256.Sum256([]byte(pass))
-
-	aesblock, err := aes.NewCipher(key[:])
-	if err != nil {
-		log.Printf("error: %v\n", err)
-		return false, err
-	}
-
-	aesgcm, err := cipher.NewGCM(aesblock)
-	if err != nil {
-		log.Printf("error cipher:: %v\n", err)
-		return false, err
-	}
-	nonce := key[len(key)-aesgcm.NonceSize():]
-
-	src2, err := aesgcm.Open(nil, nonce, encrypted, nil) // расшифровываем
-	if err != nil {
-		log.Printf("error aesgcm: %v\n", err)
-		return false, err
-	}
-
-	if bytes.Equal(src2, []byte(m)) {
-		log.Println("-------- Хеши равны -------------")
+	if bytes.Equal([]byte(fmt.Sprintf("%x", h.Sum(nil))), []byte(bodyHash)) {
+		fmt.Println("Всё правильно! Хеши равны")
 		return true, nil
+	} else {
+		fmt.Println("Что-то пошло не так")
+		return false, nil
 	}
-
-	return false, err
 }
 
 func createResponse(s *Storage) string {

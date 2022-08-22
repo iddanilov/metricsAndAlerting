@@ -2,10 +2,8 @@ package main
 
 import (
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -56,25 +54,10 @@ func main() {
 	}
 }
 
-func hash(m string, pass []byte) (string, error) {
-	src := []byte(m) // данные, которые хотим зашифровать
-	key := sha256.Sum256([]byte(pass))
-
-	aesblock, err := aes.NewCipher(key[:])
-	if err != nil {
-		return "", err
-	}
-
-	aesgcm, err := cipher.NewGCM(aesblock)
-	if err != nil {
-		return "", err
-	}
-
-	nonce := key[len(key)-aesgcm.NonceSize():]
-	dst := aesgcm.Seal(nil, nonce, src, nil)
-	log.Println("dst: ", dst)
-	return hex.EncodeToString(dst), err
-	// создаём вектор инициализации
+func hash(m string, key []byte) (string, error) {
+	h := hmac.New(sha256.New, key)
+	_, err := h.Write([]byte(m))
+	return fmt.Sprintf("%x", h.Sum(nil)), err
 }
 
 func sendMetrics(jobs <-chan []models.Metrics, resp *client.Client) {
