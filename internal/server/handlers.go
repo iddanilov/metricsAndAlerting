@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -400,14 +401,15 @@ func hashCreate(m string, key []byte) (string, error) {
 	return hex.EncodeToString(dst), err
 }
 
-func hash(bodyHash string, m string, key []byte) (bool, error) {
+func hash(bodyHash string, m string, pass []byte) (bool, error) {
 	encrypted, err := hex.DecodeString(bodyHash)
 	if err != nil {
 		log.Printf("error: %v\n", err)
 		return false, err
 	}
+	key := sha256.Sum256([]byte(pass))
 
-	aesblock, err := aes.NewCipher(key)
+	aesblock, err := aes.NewCipher(key[:])
 	if err != nil {
 		log.Printf("error: %v\n", err)
 		return false, err

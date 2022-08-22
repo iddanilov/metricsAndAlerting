@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -55,10 +56,11 @@ func main() {
 	}
 }
 
-func hash(m string, key []byte) (string, error) {
+func hash(m string, pass []byte) (string, error) {
 	src := []byte(m) // данные, которые хотим зашифровать
+	key := sha256.Sum256([]byte(pass))
 
-	aesblock, err := aes.NewCipher(key)
+	aesblock, err := aes.NewCipher(key[:])
 	if err != nil {
 		return "", err
 	}
