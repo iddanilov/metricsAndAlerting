@@ -382,10 +382,11 @@ func (h *routerGroup) UpdateMetrics(c *gin.Context) ([]byte, error) {
 	return nil, nil
 }
 
-func hashCreate(m string, key []byte) (string, error) {
+func hashCreate(m string, pass []byte) (string, error) {
 	src := []byte(m)
+	key := sha256.Sum256([]byte(pass))
 
-	aesblock, err := aes.NewCipher(key)
+	aesblock, err := aes.NewCipher(key[:])
 	if err != nil {
 		return "", err
 	}
@@ -397,7 +398,7 @@ func hashCreate(m string, key []byte) (string, error) {
 
 	nonce := key[len(key)-aesgcm.NonceSize():]
 	dst := aesgcm.Seal(nil, nonce, src, nil)
-	log.Println("dst: ", dst)
+	log.Println("x ", dst)
 	return hex.EncodeToString(dst), err
 }
 
