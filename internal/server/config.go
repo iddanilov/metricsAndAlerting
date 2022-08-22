@@ -45,7 +45,7 @@ func NewConfig() *Config {
 	if cfg.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
 	}
-	if *Key == "" {
+	if *Key != "" {
 		cfg.Key = *Key
 	}
 	if *DSN != "" {
