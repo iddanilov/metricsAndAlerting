@@ -45,10 +45,10 @@ func NewConfig() *Config {
 	if cfg.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
 	}
-	if *Key != "" {
+	if cfg.Key == "" {
 		cfg.Key = *Key
 	}
-	if *DSN != "" {
+	if cfg.DSN == "" {
 		cfg.DSN = *DSN
 	}
 	if os.Getenv("RESTORE") == "" {
