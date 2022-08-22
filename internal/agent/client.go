@@ -52,7 +52,7 @@ func NewClient() *Client {
 	if cfg.PollInterval == 0 {
 		cfg.PollInterval = *PollInterval
 	}
-	if *Key == "" {
+	if cfg.Key == "" {
 		cfg.Key = *Key
 	}
 
