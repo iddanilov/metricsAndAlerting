@@ -56,7 +56,7 @@ func Middleware(h appHandler) gin.HandlerFunc {
 				w.WriteHeader(http.StatusBadRequest)
 				w.Write(ErrNotFound.Marshal())
 			}
-			w.WriteHeader(http.StatusTeapot)
+			w.WriteHeader(http.StatusBadRequest)
 			w.Write(systemError(err).Marshal())
 		} else if body != nil {
 			if strings.Contains(r.Header.Get(`Accept-Encoding`), `gzip`) {
