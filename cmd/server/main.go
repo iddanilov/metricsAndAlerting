@@ -24,12 +24,9 @@ func main() {
 	cfg := server.NewConfig()
 	file := server.NewStorages(cfg)
 
-	if cfg.DSN != "" {
-		useDB = true
-	}
 	log.Println(cfg.DSN)
 	log.Println(useDB)
-	if useDB {
+	if cfg.DSN != "" {
 		storage, err = db.NewDB(cfg.DSN)
 		if err != nil {
 			log.Println(err)
@@ -40,6 +37,7 @@ func main() {
 			log.Println(err)
 			panic(err)
 		}
+		useDB = true
 	}
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
