@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -52,7 +54,10 @@ func (h *routerGroup) Routes() {
 
 func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
 	log.Println("Ping")
-	if err := h.db.DBPing(c); err != nil {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+	if err := h.db.DBPing(ctx); err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusNotFound)
 		return nil, err
 	}

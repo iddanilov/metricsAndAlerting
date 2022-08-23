@@ -20,25 +20,24 @@ func main() {
 	//ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
 
 	cfg := server.NewConfig()
 	file := server.NewStorages(cfg)
 
-	log.Println(cfg.DSN)
-	log.Println(useDB)
 	if cfg.DSN != "" {
 		storage, err = db.NewDB(cfg.DSN)
 		if err != nil {
 			log.Println(err)
 			panic(err)
 		}
-		go func() {
-			err := storage.CreateTable(ctx)
-			if err != nil {
-				log.Println(err)
-				panic(err)
-			}
-		}()
+		err = storage.CreateTable(ctx)
+		if err != nil {
+			log.Println(err)
+			panic(err)
+		}
+
 		useDB = true
 	}
 

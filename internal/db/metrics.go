@@ -20,7 +20,7 @@ func (db *DB) CreateTable(ctx context.Context) error {
 	row, err := db.db.Query(checkMetricDB)
 	if err != nil {
 		if err.Error() == `pq: relation "metrics" does not exist` {
-			_, err := db.db.ExecContext(ctx, createTable)
+			_, err = db.db.ExecContext(ctx, createTable)
 			if err != nil {
 				return err
 			}
