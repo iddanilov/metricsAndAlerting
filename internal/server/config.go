@@ -2,6 +2,7 @@ package server
 
 import (
 	goflag "flag"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -16,7 +17,7 @@ var (
 	StoreInterval = flag.DurationP("i", "i", 300*time.Second, "help message for StoreInterval")
 	Restore       = flag.BoolP("r", "r", true, "help message for Restore")
 	Key           = flag.StringP("k", "k", "", "help message for KEY")
-	DSN           = flag.StringP("d", "d", "***postgres:5432/praktikum?sslmode=disable", "help message for DSN")
+	DSN           = flag.StringP("d", "d", "", "help message for DSN")
 	//DSN = flag.StringP("d", "d", "host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable", "help message for KEY")
 )
 
@@ -48,7 +49,9 @@ func NewConfig() *Config {
 	if *Key != "" {
 		cfg.Key = *Key
 	}
-	if *DSN != "" {
+	if cfg.DSN == "" {
+		log.Println("DSN nil")
+		fmt.Println("DSN nil")
 		cfg.DSN = *DSN
 	}
 	if os.Getenv("RESTORE") == "" {
