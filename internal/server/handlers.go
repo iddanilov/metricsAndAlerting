@@ -52,10 +52,10 @@ func (h *routerGroup) Routes() {
 
 func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
 	log.Println("Ping")
-	//if err := h.db.DBPing(c); err != nil {
-	//	http.Error(c.Writer, err.Error(), http.StatusNotFound)
-	//	return nil, err
-	//}
+	if err := h.db.DBPing(c); err != nil {
+		http.Error(c.Writer, err.Error(), http.StatusNotFound)
+		return nil, err
+	}
 
 	return nil, nil
 }

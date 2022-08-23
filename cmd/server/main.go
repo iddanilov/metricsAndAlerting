@@ -15,6 +15,7 @@ func main() {
 	var useDB bool
 	var err error
 	storage := &db.DB{}
+	file := &server.Storage{}
 	log.Println("create router")
 
 	//ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -22,7 +23,7 @@ func main() {
 	ctx := context.Background()
 
 	cfg := server.NewConfig()
-	file := server.NewStorages(cfg)
+	file = server.NewStorages(cfg)
 
 	log.Println(cfg.DSN)
 	log.Println(useDB)
@@ -32,11 +33,13 @@ func main() {
 			log.Println(err)
 			panic(err)
 		}
-		err = storage.CreateTable(ctx)
-		if err != nil {
-			log.Println(err)
-			panic(err)
-		}
+		go func() {
+			err := storage.CreateTable(ctx)
+			if err != nil {
+				log.Println(err)
+				panic(err)
+			}
+		}()
 		useDB = true
 	}
 

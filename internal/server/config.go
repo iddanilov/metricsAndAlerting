@@ -34,6 +34,9 @@ func NewConfig() *Config {
 	var cfg Config
 
 	err := env.Parse(&cfg)
+	if err != nil {
+		panic(err)
+	}
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	flag.Parse()
 
@@ -60,9 +63,6 @@ func NewConfig() *Config {
 
 	log.Println(cfg.Address)
 	log.Println(cfg)
-	if err != nil {
-		panic(err)
-	}
 	return &cfg
 
 }
