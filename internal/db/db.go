@@ -10,7 +10,7 @@ import (
 )
 
 type DB struct {
-	db     *sql.DB
+	DB     *sql.DB
 	buffer []models.Metrics
 }
 
@@ -21,12 +21,12 @@ func NewDB(DNS string) (*DB, error) {
 	}
 
 	return &DB{
-		db:     db,
+		DB:     db,
 		buffer: make([]models.Metrics, 0, 1000),
 	}, nil
 }
 
 func (db *DB) DBPing(ctx context.Context) error {
-	return db.db.PingContext(ctx)
+	return db.DB.PingContext(ctx)
 
 }

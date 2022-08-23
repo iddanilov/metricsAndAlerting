@@ -17,10 +17,10 @@ type Metrics struct {
 }
 
 func (db *DB) CreateTable(ctx context.Context) error {
-	row, err := db.db.Query(checkMetricDB)
+	row, err := db.DB.Query(checkMetricDB)
 	if err != nil {
 		if err.Error() == `pq: relation "metrics" does not exist` {
-			_, err = db.db.ExecContext(ctx, createTable)
+			_, err = db.DB.ExecContext(ctx, createTable)
 			if err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ func (db *DB) CreateTable(ctx context.Context) error {
 }
 
 func (db *DB) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
-	_, err := db.db.ExecContext(ctx, queryUpdateMetrics, metrics.ID, metrics.MType, metrics.Delta, metrics.Value)
+	_, err := db.DB.ExecContext(ctx, queryUpdateMetrics, metrics.ID, metrics.MType, metrics.Delta, metrics.Value)
 	if err != nil {
 		log.Println("Can't Update Metric")
 	}
@@ -47,10 +47,10 @@ func (db *DB) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
 }
 
 func (db *DB) UpdateMetrics(metrics []models.Metrics) error {
-	if db.db == nil {
+	if db.DB == nil {
 		return errors.New("you haven`t opened the database connection")
 	}
-	tx, err := db.db.Begin()
+	tx, err := db.DB.Begin()
 	if err != nil {
 		log.Println("Can't create tx", err)
 		return err
@@ -86,7 +86,7 @@ func (db *DB) UpdateMetrics(metrics []models.Metrics) error {
 
 func (db *DB) GetMetric(ctx context.Context, metricID string) (models.Metrics, error) {
 	var dbMetric models.Metrics
-	row := db.db.QueryRowContext(ctx, queryGetMetric, metricID)
+	row := db.DB.QueryRowContext(ctx, queryGetMetric, metricID)
 	err := row.Scan(&dbMetric.ID, &dbMetric.MType, &dbMetric.Delta, &dbMetric.Value)
 	if err != nil {
 		return models.Metrics{}, err
@@ -96,7 +96,7 @@ func (db *DB) GetMetric(ctx context.Context, metricID string) (models.Metrics, e
 
 func (db *DB) GetCounterMetric(ctx context.Context, metricID string) (*int64, error) {
 	var result int64
-	row := db.db.QueryRowContext(ctx, queryGetCounterMetricValue, metricID)
+	row := db.DB.QueryRowContext(ctx, queryGetCounterMetricValue, metricID)
 	err := row.Scan(&result)
 	if err != nil {
 		log.Println(err)
@@ -107,7 +107,7 @@ func (db *DB) GetCounterMetric(ctx context.Context, metricID string) (*int64, er
 
 func (db *DB) GetGaugeMetric(ctx context.Context, metricID string) (*float64, error) {
 	var result float64
-	row := db.db.QueryRowContext(ctx, queryGetGaugeMetricValue, metricID)
+	row := db.DB.QueryRowContext(ctx, queryGetGaugeMetricValue, metricID)
 	err := row.Scan(&result)
 	if err != nil {
 		log.Println(err)

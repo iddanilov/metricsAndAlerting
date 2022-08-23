@@ -17,7 +17,6 @@ var (
 	Restore       = flag.BoolP("r", "r", true, "help message for Restore")
 	Key           = flag.StringP("k", "k", "", "help message for KEY")
 	DSN           = flag.StringP("d", "d", "", "help message for DSN")
-	//DSN = flag.StringP("d", "d", "host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable", "help message for KEY")
 )
 
 type Config struct {
@@ -51,12 +50,9 @@ func NewConfig() *Config {
 	if *Key != "" {
 		cfg.Key = *Key
 	}
-	//if cfg.DSN == "" {
-	//	log.Println("DSN nil")
-	//	fmt.Println("DSN nil")
-	//	cfg.DSN = *DSN
-	//}
-	cfg.DSN = ""
+	if cfg.DSN == "" {
+		cfg.DSN = *DSN
+	}
 	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore
 	}

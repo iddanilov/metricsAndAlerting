@@ -32,6 +32,7 @@ func main() {
 			log.Println(err)
 			panic(err)
 		}
+		defer storage.DB.Close()
 		err = storage.CreateTable(ctx)
 		if err != nil {
 			log.Println(err)
