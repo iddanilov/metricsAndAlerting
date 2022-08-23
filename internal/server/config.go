@@ -2,7 +2,6 @@ package server
 
 import (
 	goflag "flag"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -52,11 +51,12 @@ func NewConfig() *Config {
 	if *Key != "" {
 		cfg.Key = *Key
 	}
-	if cfg.DSN == "" {
-		log.Println("DSN nil")
-		fmt.Println("DSN nil")
-		cfg.DSN = *DSN
-	}
+	//if cfg.DSN == "" {
+	//	log.Println("DSN nil")
+	//	fmt.Println("DSN nil")
+	//	cfg.DSN = *DSN
+	//}
+	cfg.DSN = ""
 	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore
 	}
