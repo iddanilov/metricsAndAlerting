@@ -16,7 +16,7 @@ var (
 	StoreInterval = flag.DurationP("i", "i", 300*time.Second, "help message for StoreInterval")
 	Restore       = flag.BoolP("r", "r", true, "help message for Restore")
 	Key           = flag.StringP("k", "k", "", "help message for KEY")
-	DSN           = flag.StringP("d", "d", "", "help message for DSN")
+	//DSN           = flag.StringP("d", "d", "", "help message for DSN")
 )
 
 type Config struct {
@@ -50,12 +50,10 @@ func NewConfig() *Config {
 	if *Key != "" {
 		cfg.Key = *Key
 	}
+	if cfg.DSN == "" {
+		flag.StringVarP(&cfg.DSN, "d", "d", "", "help message for KEY")
+	}
 
-	cfg.DSN = "***postgres:5432/praktikum?sslmode=disable"
-
-	//if cfg.DSN == "" {
-	//	cfg.DSN =
-	//}
 	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore
 	}
