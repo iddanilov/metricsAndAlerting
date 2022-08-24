@@ -17,8 +17,6 @@ func main() {
 	storage := &db.DB{}
 	log.Println("create router")
 
-	//ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
@@ -32,7 +30,6 @@ func main() {
 			log.Println(err)
 			panic(err)
 		}
-		defer storage.DB.Close()
 		err = storage.CreateTable(ctx)
 		if err != nil {
 			log.Println(err)

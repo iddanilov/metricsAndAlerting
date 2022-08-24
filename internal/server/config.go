@@ -50,9 +50,12 @@ func NewConfig() *Config {
 	if *Key != "" {
 		cfg.Key = *Key
 	}
-	if cfg.DSN == "" {
-		cfg.DSN = *DSN
-	}
+
+	cfg.DSN = *DSN
+
+	//if cfg.DSN == "" {
+	//	cfg.DSN =
+	//}
 	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore
 	}
