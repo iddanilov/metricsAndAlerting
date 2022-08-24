@@ -51,7 +51,7 @@ func NewConfig() *Config {
 		cfg.Key = *Key
 	}
 
-	cfg.DSN = *DSN
+	cfg.DSN = "***postgres:5432/praktikum?sslmode=disable"
 
 	//if cfg.DSN == "" {
 	//	cfg.DSN =
