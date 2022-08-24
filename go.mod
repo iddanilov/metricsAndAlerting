@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/caarlos0/env/v6 v6.9.3
 	github.com/gin-gonic/gin v1.8.1
-	github.com/julienschmidt/httprouter v1.3.0
+	github.com/lib/pq v1.10.6
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.0
 )

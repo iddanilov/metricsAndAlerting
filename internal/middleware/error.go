@@ -5,6 +5,7 @@ import "encoding/json"
 var (
 	ErrNotFound       = NewAppError(nil, "not found")
 	UnknownMetricName = NewAppError(nil, "unknown metric name")
+	DisconnectDB      = NewAppError(nil, "driver: bad connection")
 )
 
 type AppError struct {

@@ -11,10 +11,12 @@ import (
 )
 
 var (
-	Address       = flag.StringP("a", "a", "127.0.0.1:8080", "help message for flagname")
-	StoreFile     = flag.StringP("f", "f", "/tmp/devops-metrics-db.json", "help message for flagname")
-	StoreInterval = flag.DurationP("i", "i", 1*time.Second, "help message for flagname")
-	Restore       = flag.BoolP("r", "r", true, "help message for flagname")
+	Address       = flag.StringP("a", "a", "127.0.0.1:8080", "help message for Address")
+	StoreFile     = flag.StringP("f", "f", "tmp/devops-metrics-db.json", "help message for StoreFile")
+	StoreInterval = flag.DurationP("i", "i", 300*time.Second, "help message for StoreInterval")
+	Restore       = flag.BoolP("r", "r", true, "help message for Restore")
+	Key           = flag.StringP("k", "k", "", "help message for KEY")
+	DSN           = flag.StringP("d", "d", "", "help message for DSN")
 )
 
 type Config struct {
@@ -22,12 +24,17 @@ type Config struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
+	Key           string        `env:"KEY"`
+	DSN           string        `env:"DATABASE_DSN"`
 }
 
 func NewConfig() *Config {
 	var cfg Config
 
 	err := env.Parse(&cfg)
+	if err != nil {
+		panic(err)
+	}
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	flag.Parse()
 
@@ -40,15 +47,22 @@ func NewConfig() *Config {
 	if cfg.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
 	}
+	if *Key != "" {
+		cfg.Key = *Key
+	}
+	if cfg.DSN == "" {
+		cfg.DSN = *DSN
+		if cfg.DSN != "" {
+			cfg.DSN = "postgres://" + cfg.DSN
+		}
+	}
+	log.Println(cfg.DSN)
 	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore
 	}
 
 	log.Println(cfg.Address)
 	log.Println(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
 	return &cfg
 
 }
