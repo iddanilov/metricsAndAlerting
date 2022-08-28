@@ -31,6 +31,10 @@ type Config struct {
 func NewConfig() *Config {
 	var cfg Config
 
+	log.Println("DATABASE_DSN: ", os.Getenv("DATABASE_DSN"))
+	log.Println("DSN: ", *DSN)
+	log.Println("DSN: ", DSN)
+
 	err := env.Parse(&cfg)
 	if err != nil {
 		panic(err)
@@ -50,11 +54,8 @@ func NewConfig() *Config {
 	if *Key != "" {
 		cfg.Key = *Key
 	}
-	cfg.DSN = "***postgres:5432/praktikum?sslmode=disable"
 	if cfg.DSN == "" {
-		if *DSN == "" {
-			cfg.DSN = ""
-		}
+		cfg.DSN = *DSN
 	}
 	log.Println(cfg.DSN)
 	if os.Getenv("RESTORE") == "" {
