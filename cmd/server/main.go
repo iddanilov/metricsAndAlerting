@@ -40,23 +40,15 @@ func main() {
 	}
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
-	//times := make(chan int64, 1)
 
 	go func(ctx context.Context) {
 		for {
-			//select {
-			//case <-ctx.Done():
-			//	close(times)
-			//	log.Println("Stop program")
-			//	os.Exit(0)
-			//default:
 			<-reportIntervalTicker.C
 			log.Println("Write data in file")
 			err := file.SaveMetricInFile(ctx)
 			if err != nil {
 				log.Println(err)
 			}
-			//	}
 		}
 
 	}(ctx)

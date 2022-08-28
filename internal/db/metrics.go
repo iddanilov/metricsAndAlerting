@@ -102,7 +102,7 @@ func (db *DB) GetCounterMetric(ctx context.Context, metricID string) (*int64, er
 		log.Println(err)
 		return nil, err
 	}
-	return &result, err
+	return &result, nil
 }
 
 func (db *DB) GetGaugeMetric(ctx context.Context, metricID string) (*float64, error) {
@@ -113,5 +113,5 @@ func (db *DB) GetGaugeMetric(ctx context.Context, metricID string) (*float64, er
 		log.Println(err)
 		return nil, err
 	}
-	return &result, err
+	return &result, nil
 }
