@@ -5,7 +5,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"fmt"
-	"github.com/shirou/gopsutil/v3/mem"
 	"log"
 	"os"
 	"os/signal"
@@ -13,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/mem"
 	_ "github.com/shirou/gopsutil/v3/mem"
 
 	client "github.com/metricsAndAlerting/internal/agent"
