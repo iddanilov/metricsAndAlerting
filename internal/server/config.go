@@ -17,7 +17,6 @@ var (
 	StoreInterval = flag.DurationP("i", "i", 300*time.Second, "help message for StoreInterval")
 	Restore       = flag.BoolP("r", "r", true, "help message for Restore")
 	Key           = flag.StringP("k", "k", "", "help message for KEY")
-	DSN           = flag.StringP("d", "d", "", "help message for DSN")
 )
 
 type Config struct {
@@ -55,13 +54,11 @@ func NewConfig() *Config {
 		for _, arg := range os.Args {
 			if strings.Contains(arg, "-d") {
 				_, a, _ := strings.Cut(arg, "-d=")
-				DSN = &a
+				cfg.DSN = a
 			}
 
 		}
 	}
-	cfg.DSN = ""
-	log.Println(cfg.DSN)
 	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore
 	}
