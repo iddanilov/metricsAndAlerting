@@ -25,9 +25,9 @@ func main() {
 
 	respClient := client.NewClient()
 	runtimeStats := runtime.MemStats{}
-	memStats := mem.VirtualMemoryStat{}
 	requestValue := models.Metrics{}
 	var metricValues []models.Metrics
+	var memMetricValues []models.Metrics
 	var counter models.Counter
 
 	metricsChan := make(chan []models.Metrics, numJobs)
@@ -48,14 +48,14 @@ func main() {
 				metricValues = requestValue.SetMetrics(&runtimeStats)
 			}()
 			go func() {
-				GetVirtualMemoryStat(ctx, &memStats)
-				metricValues = requestValue.SetVirtualMemoryMetrics(&memStats)
+				memMetricValues = requestValue.SetVirtualMemoryMetrics(GetVirtualMemoryStat(ctx))
 			}()
 		case <-reportIntervalTicker.C:
 			go func() {
 				GetRuntimeStat(&runtimeStats)
 				metricValues = requestValue.SetMetrics(&runtimeStats)
 				metricsChan <- metricValues
+				metricsChan <- memMetricValues
 				metricsChan <- counter.SetPollCountMetricValue()
 			}()
 		}
@@ -111,11 +111,11 @@ func GetRuntimeStat(metrics *runtime.MemStats) {
 	runtime.ReadMemStats(metrics)
 }
 
-func GetVirtualMemoryStat(ctx context.Context, metrics *mem.VirtualMemoryStat) {
-	var err error
-	metrics, err = mem.VirtualMemory()
+func GetVirtualMemoryStat(ctx context.Context) *mem.VirtualMemoryStat {
+	metrics, err := mem.VirtualMemory()
 	if err != nil {
 		log.Println("Error: ", err)
 		<-ctx.Done()
 	}
+	return metrics
 }
