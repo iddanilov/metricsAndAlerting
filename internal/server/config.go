@@ -50,8 +50,11 @@ func NewConfig() *Config {
 	if *Key != "" {
 		cfg.Key = *Key
 	}
+	cfg.DSN = "***postgres:5432/praktikum?sslmode=disable"
 	if cfg.DSN == "" {
-		cfg.DSN = *DSN
+		if *DSN == "" {
+			cfg.DSN = ""
+		}
 	}
 	log.Println(cfg.DSN)
 	if os.Getenv("RESTORE") == "" {
