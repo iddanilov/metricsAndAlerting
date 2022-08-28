@@ -4,6 +4,7 @@ import (
 	goflag "flag"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/caarlos0/env/v6"
@@ -31,10 +32,6 @@ type Config struct {
 func NewConfig() *Config {
 	var cfg Config
 
-	log.Println("DATABASE_DSN: ", os.Getenv("DATABASE_DSN"))
-	log.Println("DSN: ", *DSN)
-	log.Println("DSN: ", DSN)
-
 	err := env.Parse(&cfg)
 	if err != nil {
 		panic(err)
@@ -55,7 +52,13 @@ func NewConfig() *Config {
 		cfg.Key = *Key
 	}
 	if cfg.DSN == "" {
-		cfg.DSN = *DSN
+		for _, arg := range os.Args {
+			if strings.Contains(arg, "-d") {
+				_, a, _ := strings.Cut(arg, "-d=")
+				DSN = &a
+			}
+
+		}
 	}
 	cfg.DSN = ""
 	log.Println(cfg.DSN)
