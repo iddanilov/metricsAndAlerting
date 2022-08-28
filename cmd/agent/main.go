@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/mem"
-	_ "github.com/shirou/gopsutil/v3/mem"
 
 	client "github.com/metricsAndAlerting/internal/agent"
 	"github.com/metricsAndAlerting/internal/models"
@@ -113,7 +112,8 @@ func GetRuntimeStat(metrics *runtime.MemStats) {
 }
 
 func GetVirtualMemoryStat(ctx context.Context, metrics *mem.VirtualMemoryStat) {
-	metrics, err := mem.VirtualMemory()
+	var err error
+	metrics, err = mem.VirtualMemory()
 	if err != nil {
 		log.Println("Error: ", err)
 		<-ctx.Done()
