@@ -2,10 +2,8 @@ package server
 
 import (
 	goflag "flag"
-	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/caarlos0/env/v6"
@@ -14,7 +12,7 @@ import (
 
 var (
 	Address       = flag.StringP("a", "a", "127.0.0.1:8080", "help message for Address")
-	StoreFile     = flag.StringP("f", "f", "tmp/devops-metrics-db.json", "help message for StoreFile")
+	StoreFile     = flag.StringP("f", "f", "/tmp/devops-metrics-db.json", "help message for StoreFile")
 	StoreInterval = flag.DurationP("i", "i", 300*time.Second, "help message for StoreInterval")
 	Restore       = flag.BoolP("r", "r", true, "help message for Restore")
 	Key           = flag.StringP("k", "k", "", "help message for KEY")
@@ -49,18 +47,14 @@ func NewConfig() *Config {
 	if cfg.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
 	}
+	if *DSN != "" && cfg.DSN != "" {
+
+	}
 	if *Key != "" {
 		cfg.Key = *Key
 	}
-	if cfg.DSN == "" {
-		for _, arg := range os.Args {
-			if strings.Contains(arg, "-d") {
-				_, a, _ := strings.Cut(arg, "-d=")
-				cfg.DSN = a
-				fmt.Println(a)
-			}
-
-		}
+	if *DSN != "" {
+		cfg.DSN = *DSN
 	}
 	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore

@@ -34,6 +34,7 @@ func (db *DB) CreateTable(ctx context.Context) error {
 		}
 		defer row.Close()
 	}
+	log.Println("DB Create")
 
 	return nil
 }
