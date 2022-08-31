@@ -27,11 +27,13 @@ func main() {
 	if cfg.DSN != "" {
 		storage, err = db.NewDB(cfg.DSN)
 		if err != nil {
-			panic(err)
+			log.Println(err)
+			//panic(err)
 		}
 		err = storage.CreateTable(ctx)
 		if err != nil {
-			panic(err)
+			log.Println(err)
+			//panic(err)
 		}
 
 		useDB = true
