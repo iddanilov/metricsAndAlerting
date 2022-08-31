@@ -66,17 +66,6 @@ func (db *DB) UpdateMetrics(metrics []models.Metrics) error {
 	defer stmt.Close()
 
 	for _, m := range metrics {
-		if m.MType == "counter" {
-			value, err := db.GetCounterMetric(context.Background(), m.ID)
-			log.Println(sql.ErrNoRows)
-			if err != nil {
-				if !errors.Is(err, sql.ErrNoRows) {
-					return err
-				}
-			} else {
-				*m.Delta = *m.Delta + *value
-			}
-		}
 		if _, err = stmt.Exec(m.ID, m.MType, m.Delta, m.Value); err != nil {
 			log.Println("Can't make Exec", err)
 			if err = tx.Rollback(); err != nil {
