@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -51,6 +52,11 @@ func (h *routerGroup) Routes() {
 
 func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
 	log.Println("Ping")
+	if h.db.DB == nil {
+		err := errors.New("can't connect to db")
+		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
+		return nil, err
+	}
 	if err := h.db.DBPing(c); err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 		return nil, err
