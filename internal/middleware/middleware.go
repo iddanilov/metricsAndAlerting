@@ -3,7 +3,6 @@ package middleware
 import (
 	"compress/gzip"
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 
@@ -68,7 +67,6 @@ func Middleware(h appHandler) gin.HandlerFunc {
 			} else {
 				w.Write(body)
 			}
-			log.Println(w)
 		}
 	}
 }
