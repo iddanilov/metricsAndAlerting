@@ -53,10 +53,8 @@ func NewConfig() *Config {
 	if cfg.DSN == "" {
 		cfg.DSN = *DSN
 	}
-	if cfg.DSN == "" {
-		if os.Getenv("RESTORE") == "" {
-			cfg.Restore = *Restore
-		}
+	if os.Getenv("RESTORE") == "" {
+		cfg.Restore = *Restore
 	}
 
 	log.Println(cfg.Address)
