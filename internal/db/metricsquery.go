@@ -29,7 +29,6 @@ INSERT INTO metrics(id,
 values ($1, $2, $3, $4)
 on conflict(id) do 
 update set 
-	id=excluded.id,
 	m_type=excluded.m_type,
 	delta=excluded.delta,
 	value=excluded.value
