@@ -35,7 +35,7 @@ values ($1, $2, $3, $4)
 on conflict(id) do 
 update set 
 	m_type=excluded.m_type,
-	delta=excluded.delta,
+	delta=metrics.delta+excluded.delta,
 	value=excluded.value
 `
 )
