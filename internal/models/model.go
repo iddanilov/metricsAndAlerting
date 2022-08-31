@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"reflect"
 	"runtime"
+
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 type Counter int64
@@ -21,14 +23,16 @@ func (m Metrics) MetricISEmpty() bool {
 	return m.ID == ""
 }
 
-var gaugeMetric = [...]string{
-	"Alloc", "BuckHashSys", "Frees", "GCCPUFraction",
-	"GCSys", "HeapAlloc", "HeapIdle", "HeapInuse", "HeapObjects",
-	"HeapReleased", "HeapSys", "LastGC", "Lookups", "MCacheInuse",
-	"MCacheSys", "MSpanInuse", "MSpanSys", "Mallocs", "NextGC",
-	"NumForcedGC", "NumGC", "OtherSys", "PauseTotalNs", "StackInuse",
-	"StackSys", "Sys", "TotalAlloc", "RandomValue",
-}
+var (
+	gaugeMetric = [...]string{
+		"Alloc", "BuckHashSys", "Frees", "GCCPUFraction",
+		"GCSys", "HeapAlloc", "HeapIdle", "HeapInuse", "HeapObjects",
+		"HeapReleased", "HeapSys", "LastGC", "Lookups", "MCacheInuse",
+		"MCacheSys", "MSpanInuse", "MSpanSys", "Mallocs", "NextGC",
+		"NumForcedGC", "NumGC", "OtherSys", "PauseTotalNs", "StackInuse",
+		"StackSys", "Sys", "TotalAlloc", "RandomValue",
+	}
+)
 
 func (*Metrics) SetMetrics(runtimeStat *runtime.MemStats) []Metrics {
 	var result []Metrics
@@ -51,6 +55,32 @@ func (*Metrics) SetMetrics(runtimeStat *runtime.MemStats) []Metrics {
 			Value: &value,
 		})
 	}
+	return result
+}
+
+func (*Metrics) SetVirtualMemoryMetrics(virtualMemoryStat *mem.VirtualMemoryStat) []Metrics {
+	var totalMemory = float64(virtualMemoryStat.Total)
+	var freeMemory = float64(virtualMemoryStat.Free)
+	var utilization = totalMemory - freeMemory
+	var result []Metrics
+
+	result = append(result, Metrics{
+		ID:    "TotalMemory",
+		MType: "Gauge",
+		Value: &totalMemory,
+	})
+
+	result = append(result, Metrics{
+		ID:    "FreeMemory",
+		MType: "Gauge",
+		Value: &freeMemory,
+	})
+	result = append(result, Metrics{
+		ID:    "CPUutilization1",
+		MType: "Gauge",
+		Value: &utilization,
+	})
+
 	return result
 }
 

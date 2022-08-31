@@ -12,6 +12,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/mem"
+
 	client "github.com/metricsAndAlerting/internal/agent"
 	"github.com/metricsAndAlerting/internal/models"
 )
@@ -24,6 +26,8 @@ func main() {
 	respClient := client.NewClient()
 	runtimeStats := runtime.MemStats{}
 	requestValue := models.Metrics{}
+	var metricValues []models.Metrics
+	var memMetricValues []models.Metrics
 	var counter models.Counter
 
 	metricsChan := make(chan []models.Metrics, numJobs)
@@ -38,16 +42,20 @@ func main() {
 			close(metricsChan)
 			log.Println("Stopped by user")
 			os.Exit(0)
-		default:
-			<-pollIntervalTicker.C
-			GetRuntimeStat(&runtimeStats)
-			metricValue := requestValue.SetMetrics(&runtimeStats)
-
+		case <-pollIntervalTicker.C:
 			go func() {
-				<-reportIntervalTicker.C
 				GetRuntimeStat(&runtimeStats)
-				metricValue = requestValue.SetMetrics(&runtimeStats)
-				metricsChan <- metricValue
+				metricValues = requestValue.SetMetrics(&runtimeStats)
+			}()
+			go func() {
+				memMetricValues = requestValue.SetVirtualMemoryMetrics(GetVirtualMemoryStat(ctx))
+			}()
+		case <-reportIntervalTicker.C:
+			go func() {
+				GetRuntimeStat(&runtimeStats)
+				metricValues = requestValue.SetMetrics(&runtimeStats)
+				metricsChan <- metricValues
+				metricsChan <- memMetricValues
 				metricsChan <- counter.SetPollCountMetricValue()
 			}()
 		}
@@ -101,4 +109,13 @@ func sendMetrics(jobs <-chan []models.Metrics, resp *client.Client) {
 
 func GetRuntimeStat(metrics *runtime.MemStats) {
 	runtime.ReadMemStats(metrics)
+}
+
+func GetVirtualMemoryStat(ctx context.Context) *mem.VirtualMemoryStat {
+	metrics, err := mem.VirtualMemory()
+	if err != nil {
+		log.Println("Error: ", err)
+		<-ctx.Done()
+	}
+	return metrics
 }

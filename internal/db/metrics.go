@@ -34,6 +34,7 @@ func (db *DB) CreateTable(ctx context.Context) error {
 		}
 		defer row.Close()
 	}
+	log.Println("DB Create")
 
 	return nil
 }
@@ -94,6 +95,34 @@ func (db *DB) GetMetric(ctx context.Context, metricID string) (models.Metrics, e
 	return dbMetric, nil
 }
 
+func (db *DB) GetMetricNames(ctx context.Context) ([]string, error) {
+	var result []string
+	rows, err := db.DB.QueryContext(ctx, queryGetMetricNames)
+	if err != nil {
+		return nil, err
+	}
+	// обязательно закрываем перед возвратом функции
+	defer rows.Close()
+
+	// пробегаем по всем записям
+	for rows.Next() {
+		var v string
+		err = rows.Scan(&v)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, v)
+	}
+
+	// проверяем на ошибки
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func (db *DB) GetCounterMetric(ctx context.Context, metricID string) (*int64, error) {
 	var result int64
 	row := db.DB.QueryRowContext(ctx, queryGetCounterMetricValue, metricID)
@@ -102,7 +131,7 @@ func (db *DB) GetCounterMetric(ctx context.Context, metricID string) (*int64, er
 		log.Println(err)
 		return nil, err
 	}
-	return &result, err
+	return &result, nil
 }
 
 func (db *DB) GetGaugeMetric(ctx context.Context, metricID string) (*float64, error) {
@@ -113,5 +142,5 @@ func (db *DB) GetGaugeMetric(ctx context.Context, metricID string) (*float64, er
 		log.Println(err)
 		return nil, err
 	}
-	return &result, err
+	return &result, nil
 }
