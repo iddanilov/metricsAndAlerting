@@ -14,6 +14,11 @@ CREATE TABLE metrics (
 	queryGetCounterMetricValue = `
 SELECT delta FROM metrics WHERE id = $1 
 `
+
+	queryGetMetricNames = `
+SELECT id FROM metrics;
+`
+
 	queryGetMetric = `
 SELECT id, m_type, delta, value FROM metrics WHERE $1 = id
 `

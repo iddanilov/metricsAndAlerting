@@ -47,17 +47,16 @@ func NewConfig() *Config {
 	if cfg.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
 	}
-	if *DSN != "" && cfg.DSN != "" {
-
-	}
 	if *Key != "" {
 		cfg.Key = *Key
 	}
 	if *DSN != "" {
 		cfg.DSN = *DSN
 	}
-	if os.Getenv("RESTORE") == "" {
-		cfg.Restore = *Restore
+	if cfg.DSN == "" {
+		if os.Getenv("RESTORE") == "" {
+			cfg.Restore = *Restore
+		}
 	}
 
 	log.Println(cfg.Address)

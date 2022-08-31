@@ -41,7 +41,7 @@ func (db *DB) CreateTable(ctx context.Context) error {
 
 func (db *DB) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
 	if metrics.MType == "counter" {
-		value, err := db.GetCounterMetric(context.Background(), metrics.ID)
+		value, err := db.GetCounterMetric(ctx, metrics.ID)
 		log.Println(sql.ErrNoRows)
 		if err != nil {
 			if !errors.Is(err, sql.ErrNoRows) {
@@ -115,6 +115,34 @@ func (db *DB) GetMetric(ctx context.Context, metricID string) (models.Metrics, e
 		return models.Metrics{}, err
 	}
 	return dbMetric, nil
+}
+
+func (db *DB) GetMetricNames(ctx context.Context) ([]string, error) {
+	var result []string
+	rows, err := db.DB.QueryContext(ctx, queryGetMetricNames)
+	if err != nil {
+		return nil, err
+	}
+	// обязательно закрываем перед возвратом функции
+	defer rows.Close()
+
+	// пробегаем по всем записям
+	for rows.Next() {
+		var v string
+		err = rows.Scan(&v)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, v)
+	}
+
+	// проверяем на ошибки
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (db *DB) GetCounterMetric(ctx context.Context, metricID string) (*int64, error) {
