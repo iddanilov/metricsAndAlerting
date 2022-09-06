@@ -2,18 +2,16 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/gin-gonic/gin"
 
 	"github.com/metricsAndAlerting/internal/db"
 	"github.com/metricsAndAlerting/internal/middleware"
@@ -54,11 +52,13 @@ func (h *routerGroup) Routes() {
 
 func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
 	log.Println("Ping")
-	ctx := context.Background()
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
-	defer cancel()
-	if err := h.db.DBPing(ctx); err != nil {
-		http.Error(c.Writer, err.Error(), http.StatusNotFound)
+	if h.db.DB == nil {
+		err := errors.New("can't connect to db")
+		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
+		return nil, err
+	}
+	if err := h.db.DBPing(c); err != nil {
+		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 		return nil, err
 	}
 
@@ -199,7 +199,20 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 
 func (h *routerGroup) MetricList(c *gin.Context) ([]byte, error) {
 	c.Writer.Header().Set("Content-Type", "text/html")
-	return []byte(createResponse(h.s)), nil
+	var values []string
+	var err error
+	if h.useDB {
+		values, err = h.db.GetMetricNames(c)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		for _, m := range h.s.Metrics {
+			values = append(values, m.ID)
+		}
+
+	}
+	return []byte(createResponse(values)), nil
 }
 
 func (h *routerGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
@@ -220,16 +233,17 @@ func (h *routerGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 			w.WriteHeader(http.StatusBadRequest)
 			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", mType))
 		}
-		h.s.SaveGaugeMetric(&client.Metrics{
-			ID:    name,
-			MType: mType,
-			Value: &v,
-		})
 		if h.useDB {
 			err = h.db.UpdateMetric(c, client.Metrics{
 				ID:    name,
 				MType: mType,
 				Delta: nil,
+				Value: &v,
+			})
+		} else {
+			h.s.SaveGaugeMetric(&client.Metrics{
+				ID:    name,
+				MType: mType,
 				Value: &v,
 			})
 		}
@@ -242,17 +256,19 @@ func (h *routerGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 			w.WriteHeader(http.StatusBadRequest)
 			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", mValue))
 		}
-		h.s.SaveCountMetric(client.Metrics{
-			ID:    name,
-			MType: mType,
-			Delta: &v,
-		})
+
 		if h.useDB {
 			err = h.db.UpdateMetric(c, client.Metrics{
 				ID:    name,
 				MType: mType,
 				Delta: &v,
 				Value: nil,
+			})
+		} else {
+			h.s.SaveCountMetric(client.Metrics{
+				ID:    name,
+				MType: mType,
+				Delta: &v,
 			})
 		}
 		if err != nil {
@@ -299,11 +315,6 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 				return nil, err
 			}
 		}
-		h.s.SaveGaugeMetric(&client.Metrics{
-			ID:    requestBody.ID,
-			MType: strings.ToLower(requestBody.MType),
-			Value: requestBody.Value,
-		})
 		if h.useDB {
 			err := h.db.UpdateMetric(c, client.Metrics{
 				ID:    requestBody.ID,
@@ -314,6 +325,12 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			if err != nil {
 				log.Println(err)
 			}
+		} else {
+			h.s.SaveGaugeMetric(&client.Metrics{
+				ID:    requestBody.ID,
+				MType: strings.ToLower(requestBody.MType),
+				Value: requestBody.Value,
+			})
 		}
 
 	} else if strings.ToLower(requestBody.MType) == "counter" {
@@ -332,11 +349,7 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 				return nil, err
 			}
 		}
-		h.s.SaveCountMetric(client.Metrics{
-			ID:    requestBody.ID,
-			MType: strings.ToLower(requestBody.MType),
-			Delta: requestBody.Delta,
-		})
+
 		if h.useDB {
 			err := h.db.UpdateMetric(c, client.Metrics{
 				ID:    requestBody.ID,
@@ -347,6 +360,12 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			if err != nil {
 				log.Println(err)
 			}
+		} else {
+			h.s.SaveCountMetric(client.Metrics{
+				ID:    requestBody.ID,
+				MType: strings.ToLower(requestBody.MType),
+				Delta: requestBody.Delta,
+			})
 		}
 	} else {
 		w.WriteHeader(http.StatusNotImplemented)
@@ -402,11 +421,11 @@ func hash(bodyHash string, m string, key []byte) (bool, error) {
 	}
 }
 
-func createResponse(s *Storage) string {
+func createResponse(metrics []string) string {
 	baseHTML := `<h1><ul>`
 	finish := "</ul></h1>"
-	for _, gmetric := range s.Metrics {
-		baseHTML = baseHTML + fmt.Sprintf("<li>%s</li>", gmetric.ID)
+	for _, gmetric := range metrics {
+		baseHTML = baseHTML + fmt.Sprintf("<li>%s</li>", gmetric)
 	}
 	baseHTML = baseHTML + finish
 

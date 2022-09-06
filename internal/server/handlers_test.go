@@ -610,9 +610,14 @@ func TestGetCreateResponse(t *testing.T) {
 			if !tt.countMetricResult.MetricISEmpty() {
 				storage.Metrics[tt.countMetricResult.ID] = client.Metrics{ID: tt.countMetricResult.ID, MType: tt.countMetricResult.MType, Value: tt.countMetricResult.Value, Delta: tt.countMetricResult.Delta}
 			}
+			var result []string
+			for s := range storage.Metrics {
+				result = append(result, s)
 
-			assert.True(t, strings.Contains(createResponse(&storage), tt.metricResult.ID))
-			assert.True(t, strings.Contains(createResponse(&storage), tt.countMetricResult.ID))
+			}
+
+			assert.True(t, strings.Contains(createResponse(result), tt.metricResult.ID))
+			assert.True(t, strings.Contains(createResponse(result), tt.countMetricResult.ID))
 
 		})
 	}

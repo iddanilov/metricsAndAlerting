@@ -14,6 +14,11 @@ CREATE TABLE metrics (
 	queryGetCounterMetricValue = `
 SELECT delta FROM metrics WHERE id = $1 
 `
+
+	queryGetMetricNames = `
+SELECT id FROM metrics;
+`
+
 	queryGetMetric = `
 SELECT id, m_type, delta, value FROM metrics WHERE $1 = id
 `
@@ -29,9 +34,8 @@ INSERT INTO metrics(id,
 values ($1, $2, $3, $4)
 on conflict(id) do 
 update set 
-	id=excluded.id,
 	m_type=excluded.m_type,
-	delta=excluded.delta,
+	delta=metrics.delta+excluded.delta,
 	value=excluded.value
 `
 )
