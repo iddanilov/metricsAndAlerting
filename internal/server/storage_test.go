@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	client "github.com/metricsAndAlerting/internal/models"
+	client "github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
 var floatValue = 5.5

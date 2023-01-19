@@ -12,8 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/metricsAndAlerting/internal/db"
-	client "github.com/metricsAndAlerting/internal/models"
+	"github.com/iddanilov/metricsAndAlerting/internal/db"
+	client "github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
 var (

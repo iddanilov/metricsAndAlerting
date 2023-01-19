@@ -1,3 +1,4 @@
+// Package agent/main running agent application
 package main
 
 import (
@@ -6,14 +7,21 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"log"
+	"net/http"
+	_ "net/http/pprof" // подключаем пакет pprof
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
 	"time"
 
-	client "github.com/metricsAndAlerting/internal/agent"
-	"github.com/metricsAndAlerting/internal/models"
+	client "github.com/iddanilov/metricsAndAlerting/internal/agent"
+	"github.com/iddanilov/metricsAndAlerting/internal/models"
+)
+
+const (
+	//
+	addr = ":2222" // адрес сервера
 )
 
 const numJobs = 25
@@ -32,26 +40,29 @@ func main() {
 	}
 	reportIntervalTicker := time.NewTicker(respClient.Config.ReportInterval)
 	pollIntervalTicker := time.NewTicker(respClient.Config.PollInterval)
-	for {
-		select {
-		case <-ctx.Done():
-			close(metricsChan)
-			log.Println("Stopped by user")
-			os.Exit(0)
-		default:
-			<-pollIntervalTicker.C
-			GetRuntimeStat(&runtimeStats)
-			metricValue := requestValue.SetMetrics(&runtimeStats)
-
-			go func() {
-				<-reportIntervalTicker.C
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				close(metricsChan)
+				log.Println("Stopped by user")
+				os.Exit(0)
+			default:
+				<-pollIntervalTicker.C
 				GetRuntimeStat(&runtimeStats)
-				metricValue = requestValue.SetMetrics(&runtimeStats)
-				metricsChan <- metricValue
-				metricsChan <- counter.SetPollCountMetricValue()
-			}()
+				metricValue := requestValue.SetMetrics(&runtimeStats)
+
+				go func() {
+					<-reportIntervalTicker.C
+					GetRuntimeStat(&runtimeStats)
+					metricValue = requestValue.SetMetrics(&runtimeStats)
+					metricsChan <- metricValue
+					metricsChan <- counter.SetPollCountMetricValue()
+				}()
+			}
 		}
-	}
+	}()
+	http.ListenAndServe(addr, nil)
 }
 
 func hash(m string, key []byte) (string, error) {
@@ -99,6 +110,7 @@ func sendMetrics(jobs <-chan []models.Metrics, resp *client.Client) {
 	}
 }
 
+// GetRuntimeStat - получение значение MemStats из runtime
 func GetRuntimeStat(metrics *runtime.MemStats) {
 	runtime.ReadMemStats(metrics)
 }

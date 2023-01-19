@@ -1,3 +1,5 @@
+// Package client - package clint application
+// Make config and client methods
 package client
 
 import (
@@ -13,7 +15,7 @@ import (
 	"github.com/caarlos0/env/v6"
 	flag "github.com/spf13/pflag"
 
-	"github.com/metricsAndAlerting/internal/models"
+	"github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
 var (

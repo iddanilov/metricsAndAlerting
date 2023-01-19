@@ -6,7 +6,7 @@ import (
 
 	_ "github.com/lib/pq"
 
-	"github.com/metricsAndAlerting/internal/models"
+	"github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
 type DB struct {

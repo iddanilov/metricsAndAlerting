@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	client "github.com/metricsAndAlerting/internal/models"
+	client "github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
 type Storage struct {

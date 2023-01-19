@@ -1,3 +1,4 @@
+// Package server is a server handler and storage.
 package server
 
 import (
@@ -15,9 +16,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/metricsAndAlerting/internal/db"
-	"github.com/metricsAndAlerting/internal/middleware"
-	client "github.com/metricsAndAlerting/internal/models"
+	"github.com/iddanilov/metricsAndAlerting/internal/db"
+	"github.com/iddanilov/metricsAndAlerting/internal/middleware"
+	client "github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
 type routerGroup struct {
@@ -28,6 +29,7 @@ type routerGroup struct {
 	useDB bool
 }
 
+// NewRouterGroup - create new gin route group
 func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *db.DB, useDB bool) *routerGroup {
 	return &routerGroup{
 		rg:    rg,
@@ -52,6 +54,7 @@ func (h *routerGroup) Routes() {
 	}
 }
 
+// Ping - check db working.
 func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
 	log.Println("Ping")
 	ctx := context.Background()
