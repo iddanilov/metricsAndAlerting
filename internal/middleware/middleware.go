@@ -64,7 +64,6 @@ func Middleware(h appHandler) gin.HandlerFunc {
 				defer gz.Close()
 				w.Header().Set("Content-Encoding", "gzip")
 				gz.Write(body)
-
 			} else {
 				w.Write(body)
 			}

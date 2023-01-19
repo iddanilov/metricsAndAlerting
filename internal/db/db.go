@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"log"
 
 	_ "github.com/lib/pq"
 
@@ -19,6 +20,7 @@ func NewDB(DNS string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Println("DB Opened")
 
 	return &DB{
 		DB:     db,
