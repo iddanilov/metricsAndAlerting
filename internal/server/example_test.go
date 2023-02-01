@@ -36,6 +36,7 @@ func ExampleUpdateMetricByPath() {
 	// запускаем сервер
 	r.ServeHTTP(w, request)
 	res := w.Result()
+	defer res.Body.Close()
 
 	fmt.Println(res.StatusCode)
 
