@@ -1,4 +1,4 @@
-package postgresql
+package io
 
 import (
 	"sync"

@@ -1,4 +1,4 @@
-package postgresql
+package io
 
 import (
 	"context"
@@ -7,17 +7,17 @@ import (
 	"os"
 	"sync"
 
-	client "github.com/iddanilov/metricsAndAlerting/internal/models"
+	"github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
 type Storage struct {
-	Metrics map[string]client.Metrics
+	Metrics map[string]models.Metrics
 	Mutex   *sync.Mutex
 	File    string
 }
 
-func NewStorages(cfg *Config) *Storage {
-	events := make(map[string]client.Metrics, 10)
+func NewStorages(ctx context.Context, cfg models.IO) *Storage {
+	events := make(map[string]models.Metrics, 10)
 	if cfg.Restore {
 		result, err := ReadEvents(cfg.StoreFile)
 		if err != nil {
@@ -27,6 +27,7 @@ func NewStorages(cfg *Config) *Storage {
 			events = result
 		}
 	}
+
 	return &Storage{
 		Metrics: events,
 		Mutex:   &sync.Mutex{},
@@ -34,7 +35,7 @@ func NewStorages(cfg *Config) *Storage {
 	}
 }
 
-func ReadEvents(fileName string) (metrics map[string]client.Metrics, err error) {
+func ReadEvents(fileName string) (metrics map[string]models.Metrics, err error) {
 	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0777)
 	defer func(file *os.File) {
 		err = file.Close()
@@ -67,13 +68,13 @@ func (s *Storage) SaveMetricInFile(ctx context.Context) error {
 	return err
 }
 
-func (s *Storage) SaveGaugeMetric(metric *client.Metrics) {
+func (s *Storage) SaveGaugeMetric(metric *models.Metrics) {
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
 	s.Metrics[metric.ID] = *metric
 }
 
-func (s *Storage) SaveCountMetric(metric client.Metrics) {
+func (s *Storage) SaveCountMetric(metric models.Metrics) {
 	s.Mutex.Lock()
 	defer s.Mutex.Unlock()
 	result := s.Metrics[metric.ID]

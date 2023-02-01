@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/postgresql"
 	"io"
 	"log"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/iddanilov/metricsAndAlerting/internal/db"
 	client "github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
@@ -130,7 +130,7 @@ func TestSendGauge(t *testing.T) {
 			w := httptest.NewRecorder()
 			// определяем хендлер
 			mu := sync.Mutex{}
-			storage := Storage{
+			storage := postgresql.Storage{
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
@@ -274,7 +274,7 @@ func TestSendCounter(t *testing.T) {
 			w := httptest.NewRecorder()
 			// определяем хендлер
 			mu := sync.Mutex{}
-			storage := Storage{
+			storage := postgresql.Storage{
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
@@ -360,7 +360,7 @@ func TestGetMetric(t *testing.T) {
 			w := httptest.NewRecorder()
 			// определяем хендлер
 			mu := sync.Mutex{}
-			storage := Storage{
+			storage := postgresql.Storage{
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
@@ -448,7 +448,7 @@ func TestGetGauge(t *testing.T) {
 			w := httptest.NewRecorder()
 			// определяем хендлер
 			mu := sync.Mutex{}
-			storage := Storage{
+			storage := postgresql.Storage{
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
@@ -538,7 +538,7 @@ func TestGetMetrics(t *testing.T) {
 			w := httptest.NewRecorder()
 			// определяем хендлер
 			mu := sync.Mutex{}
-			storage := Storage{
+			storage := postgresql.Storage{
 				Metrics: make(map[string]client.Metrics, 10),
 				Mutex:   &mu,
 			}
@@ -600,7 +600,7 @@ func TestGetCreateResponse(t *testing.T) {
 	for _, tt := range tests {
 		// запускаем каждый тест
 		t.Run(tt.name, func(t *testing.T) {
-			storage := Storage{
+			storage := postgresql.Storage{
 				Metrics: make(map[string]client.Metrics, 10),
 			}
 			if !tt.metricResult.MetricISEmpty() {

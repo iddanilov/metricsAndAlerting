@@ -9,26 +9,27 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/io"
+	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/postgresql"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/iddanilov/metricsAndAlerting/internal/db"
-	"github.com/iddanilov/metricsAndAlerting/internal/middleware"
 	client "github.com/iddanilov/metricsAndAlerting/internal/models"
+	"github.com/iddanilov/metricsAndAlerting/internal/pkg/middleware"
 )
 
 type routerGroup struct {
 	rg    *gin.RouterGroup
-	s     *Storage
+	s     *io.Storage
 	key   string
-	db    *db.DB
+	db    *postgresql.DB
 	useDB bool
 }
 
 // NewRouterGroup - create new gin route group
-func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *db.DB, useDB bool) *routerGroup {
+func NewRouterGroup(rg *gin.RouterGroup, s *postgresql.Storage, key string, db *db.DB, useDB bool) *routerGroup {
 	return &routerGroup{
 		rg:    rg,
 		s:     s,

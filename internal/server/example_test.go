@@ -3,8 +3,8 @@ package server_test
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/iddanilov/metricsAndAlerting/internal/db"
 	client "github.com/iddanilov/metricsAndAlerting/internal/models"
+	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/postgresql"
 	"github.com/iddanilov/metricsAndAlerting/internal/server"
 	"net/http"
 	"net/http/httptest"
@@ -19,7 +19,7 @@ func ExampleUpdateMetricByPath() {
 	w := httptest.NewRecorder()
 	// определяем хендлер
 	mu := sync.Mutex{}
-	storage := server.Storage{
+	storage := postgresql.Storage{
 		Metrics: make(map[string]client.Metrics, 10),
 		Mutex:   &mu,
 	}

@@ -1,4 +1,4 @@
-package db
+package postgresql
 
 const (
 	checkMetricDB = `

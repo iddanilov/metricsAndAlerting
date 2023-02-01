@@ -1,13 +1,16 @@
 package task
 
 import (
-	"context"
-	"gitlab.corp.mail.ru/calendar/notesapi/internal/app/models"
+	"github.com/gin-gonic/gin"
 )
 
-//go:generate mockgen -package mock -destination usecase/mock/task_mock.go . Usecase
-
-// Usecase represent the tasks's usecases
+// Usecase represent the metric and server's usecases
 type Usecase interface {
-	GetByID(ctx context.Context, key models.NotePrimaryKey) (models.Note, error)
+	Ping(c *gin.Context) ([]byte, error)
+	GetMetric(c *gin.Context) ([]byte, error)
+	GetMetricByPath(c *gin.Context) ([]byte, error)
+	MetricList(c *gin.Context) ([]byte, error)
+	UpdateMetricByPath(c *gin.Context) ([]byte, error)
+	UpdateMetric(c *gin.Context) ([]byte, error)
+	UpdateMetrics(c *gin.Context) ([]byte, error)
 }
