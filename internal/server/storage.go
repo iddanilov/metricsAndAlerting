@@ -12,7 +12,7 @@ import (
 
 type Storage struct {
 	Metrics map[string]client.Metrics
-	Mutex   *sync.Mutex
+	Mutex   sync.Mutex
 	File    string
 }
 
@@ -29,7 +29,7 @@ func NewStorages(cfg *Config) *Storage {
 	}
 	return &Storage{
 		Metrics: events,
-		Mutex:   &sync.Mutex{},
+		Mutex:   sync.Mutex{},
 		File:    cfg.StoreFile,
 	}
 }

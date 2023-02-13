@@ -132,7 +132,7 @@ func TestSendGauge(t *testing.T) {
 			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
-				Mutex:   &mu,
+				Mutex:   mu,
 			}
 			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 			if err != nil {
@@ -276,7 +276,7 @@ func TestSendCounter(t *testing.T) {
 			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
-				Mutex:   &mu,
+				Mutex:   mu,
 			}
 			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 			if err != nil {
@@ -362,7 +362,7 @@ func TestGetMetric(t *testing.T) {
 			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
-				Mutex:   &mu,
+				Mutex:   mu,
 			}
 			if !tt.metricResult.MetricISEmpty() {
 				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: tt.metricResult.Value, Delta: tt.metricResult.Delta}
@@ -450,7 +450,7 @@ func TestGetGauge(t *testing.T) {
 			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
-				Mutex:   &mu,
+				Mutex:   mu,
 			}
 			if !tt.metricResult.MetricISEmpty() {
 				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: tt.metricResult.Value, Delta: tt.metricResult.Delta}
@@ -540,7 +540,7 @@ func TestGetMetrics(t *testing.T) {
 			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
-				Mutex:   &mu,
+				Mutex:   mu,
 			}
 			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 			if err != nil {

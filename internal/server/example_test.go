@@ -23,7 +23,7 @@ func ExampleRouterGroup_UpdateMetricByPath() {
 	mu := sync.Mutex{}
 	storage := server.Storage{
 		Metrics: make(map[string]client.Metrics, 10),
-		Mutex:   &mu,
+		Mutex:   mu,
 	}
 	db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 	if err != nil {
@@ -57,7 +57,7 @@ func ExampleRouterGroup_GetMetric() {
 	mu := sync.Mutex{}
 	storage := server.Storage{
 		Metrics: make(map[string]client.Metrics, 10),
-		Mutex:   &mu,
+		Mutex:   mu,
 	}
 	metricResult := client.Metrics{
 		ID:    "Alloc",
@@ -98,7 +98,7 @@ func ExampleRouterGroup_GetMetric() {
 //	mu := sync.Mutex{}
 //	storage := server.Storage{
 //		Metrics: make(map[string]client.Metrics, 10),
-//		Mutex:   &mu,
+//		Mutex:   mu,
 //	}
 //	db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 //	if err != nil {
