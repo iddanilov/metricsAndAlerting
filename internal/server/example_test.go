@@ -8,7 +8,6 @@ import (
 	"github.com/iddanilov/metricsAndAlerting/internal/server"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 )
 
 var baseFloat float64 = 5.5
@@ -20,10 +19,8 @@ func ExampleRouterGroup_UpdateMetricByPath() {
 	// создаём новый Recorder
 	w := httptest.NewRecorder()
 	// определяем хендлер
-	mu := sync.Mutex{}
 	storage := server.Storage{
 		Metrics: make(map[string]client.Metrics, 10),
-		Mutex:   mu,
 	}
 	db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 	if err != nil {
@@ -54,10 +51,8 @@ func ExampleRouterGroup_GetMetric() {
 	// создаём новый Recorder
 	w := httptest.NewRecorder()
 	// определяем хендлер
-	mu := sync.Mutex{}
 	storage := server.Storage{
 		Metrics: make(map[string]client.Metrics, 10),
-		Mutex:   mu,
 	}
 	metricResult := client.Metrics{
 		ID:    "Alloc",
@@ -95,10 +90,10 @@ func ExampleRouterGroup_GetMetric() {
 //	// создаём новый Recorder
 //	w := httptest.NewRecorder()
 //	// определяем хендлер
-//	mu := sync.Mutex{}
+//	mu := sync.mutex{}
 //	storage := server.Storage{
 //		Metrics: make(map[string]client.Metrics, 10),
-//		Mutex:   mu,
+//		mutex:   mu,
 //	}
 //	db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 //	if err != nil {

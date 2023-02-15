@@ -35,7 +35,7 @@ func TestSaveGaugeMetric(t *testing.T) {
 			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
-				Mutex:   mu,
+				mutex:   mu,
 			}
 			storage.SaveGaugeMetric(&tt.gaugeMetricResult)
 
@@ -67,7 +67,7 @@ func TestSaveCounterMetric(t *testing.T) {
 			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
-				Mutex:   mu,
+				mutex:   mu,
 			}
 			storage.SaveCountMetric(tt.countMetricResult)
 
