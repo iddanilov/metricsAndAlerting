@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"log"
 	"os"
@@ -49,12 +48,10 @@ func ReadEvents(fileName string) (metrics map[string]client.Metrics, err error) 
 	return metrics, nil
 }
 
-func (s *Storage) SaveMetricInFile(ctx context.Context) error {
+func (s *Storage) SaveMetricInFile() error {
 	if len(s.Metrics) == 0 {
 		return nil
 	}
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	file, err := os.OpenFile(s.File, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return err
