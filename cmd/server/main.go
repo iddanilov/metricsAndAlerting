@@ -55,7 +55,7 @@ func main() {
 		for {
 			<-reportIntervalTicker.C
 			log.Println("Write data in file")
-			err := file.SaveMetricInFile(ctx)
+			err := file.SaveMetricInFile()
 			if err != nil {
 				log.Println(err)
 			}
