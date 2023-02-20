@@ -3,34 +3,34 @@ package postgresql
 import (
 	"context"
 	"errors"
-	serverapp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
+
+	server "github.com/iddanilov/metricsAndAlerting/internal/app/server"
+	"github.com/iddanilov/metricsAndAlerting/internal/models"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/postgresql"
-	"log"
-
-	"github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
 type serverRepository struct {
 	db     postgresql.DB
 	logger logger.Logger
-	//ID    string           `db:"id"`
-	//MType string           `db:"m_type"`
-	//Delta *sql.NullInt64   `db:"delta"`
-	//Value *sql.NullFloat64 `db:"value"`
 }
 
-func NewServerRepository(logger logger.Logger) serverapp.Repository {
-	return serverRepository{
+func NewServerRepository(db postgresql.DB, logger logger.Logger) server.Repository {
+	return &serverRepository{
 		logger: logger,
+		db:     db,
 	}
 }
 
-func (s serverRepository) CreateTable(ctx context.Context) error {
-	row, err := s.db.DB.Query(checkMetricDB)
+func (r *serverRepository) Ping() error {
+	return r.db.DB.Ping()
+}
+
+func (r *serverRepository) CreateTable(ctx context.Context) error {
+	row, err := r.db.DB.Query(checkMetricDB)
 	if err != nil {
 		if err.Error() == `pq: relation "metrics" does not exist` {
-			_, err = s.db.DB.ExecContext(ctx, createTable)
+			_, err = r.db.DB.ExecContext(ctx, createTable)
 			if err != nil {
 				return err
 			}
@@ -42,62 +42,60 @@ func (s serverRepository) CreateTable(ctx context.Context) error {
 		if row.Err() != nil {
 			return err
 		}
-		defer row.Close()
+
 	}
-	log.Println("DB Create")
+	r.logger.Info("DB Create")
 
 	return nil
 }
 
-func (s serverRepository) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
-	_, err := s.db.DB.ExecContext(ctx, queryUpdateMetrics, metrics.ID, metrics.MType, metrics.Delta, metrics.Value)
+func (r *serverRepository) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
+	_, err := r.db.DB.ExecContext(ctx, queryUpdateMetrics, metrics.ID, metrics.MType, metrics.Delta, metrics.Value)
 	if err != nil {
-		log.Println("Can't Update Metric")
+		r.logger.Error("Can't Update Metric")
 	}
 	return err
 }
 
-func (s serverRepository) UpdateMetrics(metrics []models.Metrics) error {
-	if db.DB == nil {
+func (r *serverRepository) UpdateMetrics(metrics []models.Metrics) error {
+	if r.db.DB == nil {
 		return errors.New("you haven`t opened the database connection")
 	}
-	tx, err := s.db.DB.Begin()
+	tx, err := r.db.DB.Begin()
 	if err != nil {
-		log.Println("Can't create tx", err)
+		r.logger.Error("can't create tx", err)
 		return err
 	}
 
 	stmt, err := tx.Prepare(queryUpdateMetrics)
 	if err != nil {
-		log.Println("Can't create stmt", err)
+		r.logger.Error("can't create stmt", err)
 		return err
 	}
 
-	defer stmt.Close()
-
 	for _, m := range metrics {
 		if _, err = stmt.Exec(m.ID, m.MType, m.Delta, m.Value); err != nil {
-			log.Println("Can't make Exec", err)
+			r.logger.Error("can't make Exec", err)
 			if err = tx.Rollback(); err != nil {
-				log.Fatalf("update drivers: unable to rollback: %v", err)
+				r.logger.Fatalf("update drivers: unable to rollback: %v", err)
 			}
 			return err
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		log.Fatalf("update drivers: unable to commit: %v", err)
+		r.logger.Fatalf("update drivers: unable to commit: %v", err)
 		return err
 	}
 
-	db.buffer = db.buffer[:0]
+	r.db.Buffer = r.db.Buffer[:0]
 	return nil
 
 }
 
-func (db *DB) GetMetric(ctx context.Context, metricID string) (models.Metrics, error) {
+func (r *serverRepository) GetMetric(ctx context.Context, metricID string) (models.Metrics, error) {
 	var dbMetric models.Metrics
-	row := db.DB.QueryRowContext(ctx, queryGetMetric, metricID)
+	row := r.db.DB.QueryRowContext(ctx, queryGetMetric, metricID)
 	err := row.Scan(&dbMetric.ID, &dbMetric.MType, &dbMetric.Delta, &dbMetric.Value)
 	if err != nil {
 		return models.Metrics{}, err
@@ -105,14 +103,12 @@ func (db *DB) GetMetric(ctx context.Context, metricID string) (models.Metrics, e
 	return dbMetric, nil
 }
 
-func (db *DB) GetMetricNames(ctx context.Context) ([]string, error) {
+func (r *serverRepository) GetMetricNames(ctx context.Context) ([]string, error) {
 	var result []string
-	rows, err := db.DB.QueryContext(ctx, queryGetMetricNames)
+	rows, err := r.db.DB.QueryContext(ctx, queryGetMetricNames)
 	if err != nil {
 		return nil, err
 	}
-	// обязательно закрываем перед возвратом функции
-	defer rows.Close()
 
 	// пробегаем по всем записям
 	for rows.Next() {
@@ -133,23 +129,23 @@ func (db *DB) GetMetricNames(ctx context.Context) ([]string, error) {
 	return result, nil
 }
 
-func (db *serverRepository) GetCounterMetric(ctx context.Context, metricID string) (*int64, error) {
+func (r *serverRepository) GetCounterMetric(ctx context.Context, metricID string) (*int64, error) {
 	var result int64
-	row := db.DB.QueryRowContext(ctx, queryGetCounterMetricValue, metricID)
+	row := r.db.DB.QueryRowContext(ctx, queryGetCounterMetricValue, metricID)
 	err := row.Scan(&result)
 	if err != nil {
-		log.Println(err)
+		r.logger.Error(err)
 		return nil, err
 	}
 	return &result, nil
 }
 
-func (db *DB) GetGaugeMetric(ctx context.Context, metricID string) (*float64, error) {
+func (r *serverRepository) GetGaugeMetric(ctx context.Context, metricID string) (*float64, error) {
 	var result float64
-	row := db.DB.QueryRowContext(ctx, queryGetGaugeMetricValue, metricID)
+	row := r.db.DB.QueryRowContext(ctx, queryGetGaugeMetricValue, metricID)
 	err := row.Scan(&result)
 	if err != nil {
-		log.Println(err)
+		r.logger.Error(err)
 		return nil, err
 	}
 	return &result, nil

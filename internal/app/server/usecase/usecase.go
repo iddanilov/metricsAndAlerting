@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	serverapp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
-	"github.com/iddanilov/metricsAndAlerting/internal/models"
+	serverApp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
 	client "github.com/iddanilov/metricsAndAlerting/internal/models"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/middleware"
@@ -20,29 +20,33 @@ import (
 type Config struct {
 }
 
-type serverUsecase struct {
-	config    models.Storage
-	serverapp serverapp.Repository
-	logger    logger.Logger
+type serverUseCase struct {
+	repository serverApp.Repository
+	storage    serverApp.Storage
+	logger     logger.Logger
+	useDB      bool
+	key        string
 }
 
-func NewServerUsecase(config models.Storage, noteRepo serverapp.Repository, logger logger.Logger) serverapp.Usecase {
-	return &serverUsecase{
-		config:    config,
-		serverapp: noteRepo,
-		logger:    logger,
+func NewServerUseCase(
+	serverRepo serverApp.Repository,
+	storage serverApp.Storage,
+	logger logger.Logger,
+	useDB bool,
+	key string) serverApp.Usecase {
+	return &serverUseCase{
+		repository: serverRepo,
+		logger:     logger,
+		useDB:      useDB,
+		storage:    storage,
+		key:        key,
 	}
 }
 
 // Ping - check db working.
-func (h *serverUsecase) Ping(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) Ping(c *gin.Context) ([]byte, error) {
 	log.Println("Ping")
-	if h.db.DB == nil {
-		err := errors.New("can't connect to db")
-		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
-		return nil, err
-	}
-	if err := h.db.DBPing(c); err != nil {
+	if err := u.repository.Ping(); err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 		return nil, err
 	}
@@ -50,7 +54,7 @@ func (h *serverUsecase) Ping(c *gin.Context) ([]byte, error) {
 	return nil, nil
 }
 
-func (h *serverUsecase) GetMetric(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) GetMetric(c *gin.Context) ([]byte, error) {
 	var hashValue string
 	var err error
 	r := c.Request
@@ -68,25 +72,25 @@ func (h *serverUsecase) GetMetric(c *gin.Context) ([]byte, error) {
 	if requestBody.ID == "" {
 		return nil, middleware.ErrNotFound
 	}
-	if h.useDB {
-		responseBody, err = h.db.GetMetric(c, requestBody.ID)
+	if u.useDB {
+		responseBody, err = u.repository.GetMetric(c, requestBody.ID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return nil, err
 		}
 	} else {
-		response, ok := h.s.Metrics[requestBody.ID]
-		if !ok {
-			return nil, middleware.ErrNotFound
+		responseBody, err = u.storage.GetMetric(requestBody)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return nil, err
 		}
-		response.MType = strings.ToLower(response.MType)
-		responseBody = response
+
 	}
-	if h.key != "" {
+	if u.key != "" {
 		if strings.ToLower(requestBody.MType) == "gauge" {
-			hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", responseBody.ID, *responseBody.Value), []byte(h.key))
+			hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", responseBody.ID, *responseBody.Value), []byte(u.key))
 		} else {
-			hashValue, err = hashCreate(fmt.Sprintf("%s:counter:%d", responseBody.ID, *responseBody.Delta), []byte(h.key))
+			hashValue, err = hashCreate(fmt.Sprintf("%s:counter:%d", responseBody.ID, *responseBody.Delta), []byte(u.key))
 		}
 		if err != nil {
 			log.Println(err)
@@ -112,7 +116,7 @@ func (h *serverUsecase) GetMetric(c *gin.Context) ([]byte, error) {
 
 }
 
-func (h *serverUsecase) GetMetricByPath(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	var err error
@@ -128,48 +132,38 @@ func (h *serverUsecase) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	var response []byte
 	if strings.ToLower(mType) == "gauge" {
 		var result *float64
-		if h.useDB {
-			result, err = h.db.GetGaugeMetric(c, name)
+		if u.useDB {
+			result, err = u.repository.GetGaugeMetric(c, name)
 			if err != nil {
 				log.Println(err)
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
 		} else {
-			metric, ok := h.s.Metrics[name]
-			if !ok {
+			result, err = u.storage.GetMetricValue(name)
+			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
-			if metric.Value == nil {
-				w.WriteHeader(http.StatusNotFound)
-				return nil, middleware.ErrNotFound
-			}
-			result = metric.Value
 		}
 
 		response = []byte(fmt.Sprintf("%v", *result))
 		w.WriteHeader(http.StatusOK)
 	} else if strings.ToLower(mType) == "counter" {
 		var result *int64
-		if h.useDB {
-			result, err = h.db.GetCounterMetric(c, name)
+		if u.useDB {
+			result, err = u.repository.GetCounterMetric(c, name)
 			if err != nil {
 				log.Println(err)
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
 		} else {
-			metric, ok := h.s.Metrics[name]
-			if !ok {
+			result, err = u.storage.GetMetricDelta(name)
+			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
-			if metric.Delta == nil {
-				w.WriteHeader(http.StatusNotFound)
-				return nil, middleware.ErrNotFound
-			}
-			result = metric.Delta
 		}
 
 		response = []byte(fmt.Sprintf("%v", *result))
@@ -182,25 +176,25 @@ func (h *serverUsecase) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	return response, nil
 }
 
-func (h *serverUsecase) MetricList(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) MetricList(c *gin.Context) ([]byte, error) {
 	c.Writer.Header().Set("Content-Type", "text/html")
 	var values []string
 	var err error
-	if h.useDB {
-		values, err = h.db.GetMetricNames(c)
+	if u.useDB {
+		values, err = u.repository.GetMetricNames(c)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		for _, m := range h.s.Metrics {
-			values = append(values, m.ID)
+		values, err = u.storage.GetMetricsByPath()
+		if err != nil {
+			return nil, err
 		}
-
 	}
 	return []byte(createResponse(values)), nil
 }
 
-func (h *serverUsecase) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	log.Println("UpdateMetricByPath Metrics", r.URL)
@@ -218,15 +212,15 @@ func (h *serverUsecase) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 			w.WriteHeader(http.StatusBadRequest)
 			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", mType))
 		}
-		if h.useDB {
-			err = h.db.UpdateMetric(c, client.Metrics{
+		if u.useDB {
+			err = u.repository.UpdateMetric(c, client.Metrics{
 				ID:    name,
 				MType: mType,
 				Delta: nil,
 				Value: &v,
 			})
 		} else {
-			h.s.SaveGaugeMetric(&client.Metrics{
+			u.storage.SaveGaugeMetric(&client.Metrics{
 				ID:    name,
 				MType: mType,
 				Value: &v,
@@ -242,15 +236,15 @@ func (h *serverUsecase) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", mValue))
 		}
 
-		if h.useDB {
-			err = h.db.UpdateMetric(c, client.Metrics{
+		if u.useDB {
+			err = u.repository.UpdateMetric(c, client.Metrics{
 				ID:    name,
 				MType: mType,
 				Delta: &v,
 				Value: nil,
 			})
 		} else {
-			h.s.SaveCountMetric(client.Metrics{
+			u.storage.SaveCountMetric(client.Metrics{
 				ID:    name,
 				MType: mType,
 				Delta: &v,
@@ -273,7 +267,7 @@ func (h *serverUsecase) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 	return nil, nil
 }
 
-func (h *serverUsecase) UpdateMetric(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) UpdateMetric(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	requestBody := client.Metrics{}
@@ -289,8 +283,8 @@ func (h *serverUsecase) UpdateMetric(c *gin.Context) ([]byte, error) {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
 		}
-		if h.key != "" && requestBody.Hash != "" {
-			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
+		if u.key != "" && requestBody.Hash != "" {
+			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(u.key))
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return nil, err
@@ -300,8 +294,8 @@ func (h *serverUsecase) UpdateMetric(c *gin.Context) ([]byte, error) {
 				return nil, err
 			}
 		}
-		if h.useDB {
-			err := h.db.UpdateMetric(c, client.Metrics{
+		if u.useDB {
+			err := u.repository.UpdateMetric(c, client.Metrics{
 				ID:    requestBody.ID,
 				MType: strings.ToLower(requestBody.MType),
 				Delta: nil,
@@ -311,7 +305,7 @@ func (h *serverUsecase) UpdateMetric(c *gin.Context) ([]byte, error) {
 				log.Println(err)
 			}
 		} else {
-			h.s.SaveGaugeMetric(&client.Metrics{
+			u.storage.SaveGaugeMetric(&client.Metrics{
 				ID:    requestBody.ID,
 				MType: strings.ToLower(requestBody.MType),
 				Value: requestBody.Value,
@@ -323,8 +317,8 @@ func (h *serverUsecase) UpdateMetric(c *gin.Context) ([]byte, error) {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
 		}
-		if h.key != "" && requestBody.Hash != "" {
-			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:counter:%d", requestBody.ID, *requestBody.Delta), []byte(h.key))
+		if u.key != "" && requestBody.Hash != "" {
+			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:counter:%d", requestBody.ID, *requestBody.Delta), []byte(u.key))
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return nil, err
@@ -335,8 +329,8 @@ func (h *serverUsecase) UpdateMetric(c *gin.Context) ([]byte, error) {
 			}
 		}
 
-		if h.useDB {
-			err := h.db.UpdateMetric(c, client.Metrics{
+		if u.useDB {
+			err := u.repository.UpdateMetric(c, client.Metrics{
 				ID:    requestBody.ID,
 				MType: strings.ToLower(requestBody.MType),
 				Delta: requestBody.Delta,
@@ -346,7 +340,7 @@ func (h *serverUsecase) UpdateMetric(c *gin.Context) ([]byte, error) {
 				log.Println(err)
 			}
 		} else {
-			h.s.SaveCountMetric(client.Metrics{
+			u.storage.SaveCountMetric(client.Metrics{
 				ID:    requestBody.ID,
 				MType: strings.ToLower(requestBody.MType),
 				Delta: requestBody.Delta,
@@ -361,7 +355,7 @@ func (h *serverUsecase) UpdateMetric(c *gin.Context) ([]byte, error) {
 	return nil, nil
 }
 
-func (h *serverUsecase) UpdateMetrics(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) UpdateMetrics(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	log.Println("UpdateMetric Metrics", r.URL)
@@ -373,8 +367,8 @@ func (h *serverUsecase) UpdateMetrics(c *gin.Context) ([]byte, error) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, err
 	}
-	if h.useDB {
-		err := h.db.UpdateMetrics(requestBody)
+	if u.useDB {
+		err := u.repository.UpdateMetrics(requestBody)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
@@ -409,8 +403,8 @@ func hash(bodyHash string, m string, key []byte) (bool, error) {
 func createResponse(metrics []string) string {
 	baseHTML := `<h1><ul>`
 	finish := "</ul></h1>"
-	for _, gmetric := range metrics {
-		baseHTML = baseHTML + fmt.Sprintf("<li>%s</li>", gmetric)
+	for _, metric := range metrics {
+		baseHTML = baseHTML + fmt.Sprintf("<li>%s</li>", metric)
 	}
 	baseHTML = baseHTML + finish
 

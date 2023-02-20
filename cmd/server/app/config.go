@@ -19,6 +19,7 @@ var (
 	Restore       = flag.BoolP("r", "r", true, "help message for Restore")
 	Key           = flag.StringP("k", "k", "", "help message for KEY")
 	DSN           = flag.StringP("d", "d", "", "help message for DSN")
+	LoggerLevel   = flag.StringP("l", "l", "debug", "LoggerLevel")
 )
 
 func NewConfig() *models.Config {
@@ -33,6 +34,9 @@ func NewConfig() *models.Config {
 
 	if cfg.Address == "" {
 		cfg.Address = *Address
+	}
+	if cfg.LoggerLevel == "" {
+		cfg.LoggerLevel = *LoggerLevel
 	}
 	if cfg.Storage.StoreInterval == 0 {
 		cfg.StoreInterval = *StoreInterval

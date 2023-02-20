@@ -2,22 +2,26 @@ package app
 
 import (
 	"context"
-	"github.com/gin-contrib/pprof"
-	"github.com/gin-gonic/gin"
-	serverDelivery "github.com/iddanilov/metricsAndAlerting/internal/app/server/delivery/http"
-	serverRepository "github.com/iddanilov/metricsAndAlerting/internal/app/server/repository/postgres"
-	serverusecase "github.com/iddanilov/metricsAndAlerting/internal/app/server/usecase"
-	logger "github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
-	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/io"
-	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/postgresql"
-	swaggerfiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	"log"
 	"time"
+
+	"github.com/gin-contrib/pprof"
+	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	serverDelivery "github.com/iddanilov/metricsAndAlerting/internal/app/server/delivery/http"
+	serverRepository "github.com/iddanilov/metricsAndAlerting/internal/app/server/repository/postgres"
+	serverStorage "github.com/iddanilov/metricsAndAlerting/internal/app/server/repository/storage"
+	serverUseCase "github.com/iddanilov/metricsAndAlerting/internal/app/server/usecase"
+	"github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
+	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/io"
+	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/postgresql"
 )
 
 func Run() {
 	var err error
+	var useDB bool
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
@@ -36,20 +40,18 @@ func Run() {
 	r := gin.New()
 	r.RedirectTrailingSlash = false
 
-	//var useDB bool
-
 	// init db
 	pg := &postgresql.DB{}
 	if cfg.Postgres.DSN != "" {
 		pg, err = postgresql.NewDB(cfg.DSN)
 		if err != nil {
-			log.Println(err)
+			logger.Error(err)
 		}
 		err = pg.CreateTable(ctx)
 		if err != nil {
-			log.Println(err)
+			logger.Error(err)
 		}
-
+		useDB = true
 	}
 
 	// init IO storage
@@ -60,7 +62,7 @@ func Run() {
 	go func(ctx context.Context) {
 		for {
 			<-reportIntervalTicker.C
-			log.Println("Write data in file")
+			log.Println("Write data in storage")
 			err := file.SaveMetricInFile(ctx)
 			if err != nil {
 				log.Println(err)
@@ -69,18 +71,20 @@ func Run() {
 
 	}(ctx)
 
-	//ginSwagger.WrapHandler(swaggerfiles.Handler,
+	//ginSwagger.WrapHandler(swaggerFiles.Handler,
 	//	ginSwagger.URL("http://localhost:8080/swagger/doc.json"),
 	//	ginSwagger.DefaultModelsExpandDepth(-1))
 	//
 	//pprof.Register(r)
 
-	serverRep := serverRepository.NewServerRepository(logger)
-	serverUsecase := serverusecase.NewServerUsecase(cfg.Storage, serverRep, logger)
+	repository := serverRepository.NewServerRepository(*pg, logger)
+	storage := serverStorage.NewStorages(cfg, logger)
 
-	rg := serverDelivery.NewRouterGroup(&r.RouterGroup, serverUsecase)
+	useCase := serverUseCase.NewServerUseCase(repository, storage, logger, useDB, cfg.Key)
 
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	rg := serverDelivery.NewRouterGroup(&r.RouterGroup, useCase)
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	rg.Routes()
 	pprof.RouteRegister(&r.RouterGroup, "pprof")

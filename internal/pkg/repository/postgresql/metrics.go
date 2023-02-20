@@ -80,7 +80,7 @@ func (db *DB) UpdateMetrics(metrics []models.Metrics) error {
 		return err
 	}
 
-	db.buffer = db.buffer[:0]
+	db.Buffer = db.Buffer[:0]
 	return nil
 
 }
