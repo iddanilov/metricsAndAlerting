@@ -10,7 +10,7 @@ jobs:
 
   devopstest:
     runs-on: ubuntu-latest
-    container: golang:1.18
+    container: golang:1.19
 
     services:
       postgres:
@@ -31,7 +31,7 @@ jobs:
       - name: Download autotests binaries
         uses: robinraju/release-downloader@v1.2
         with:
-          repository: Yandex-Practicum/go-autotests-bin
+          repository: Yandex-Practicum/go-autotests
           latest: true
           fileName: "*"
           out-file-path: .tools
@@ -45,7 +45,7 @@ jobs:
       - name: Build agent binary
         run: |
           cd cmd/agent
-          go build -o agent
+          go build -buildvcs=false -o agent
 
 # Соглашение:
 #   Во всех заданиях, нужно обрабатывать все пограничные случаи и негатив-кейсы.
@@ -108,7 +108,7 @@ jobs:
       - name: Build server binary
         run: |
           cd cmd/server
-          go build -o server
+          go build -buildvcs=false -o server
 
 # II. Задание ко второму инкременту.
 # Разработать сервер по сбору рантайм метрик, который собирает репорты от агентов по протоколу http.
@@ -409,3 +409,8 @@ jobs:
             -file-storage-path=$TEMP_FILE \
             -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
             -key="${TEMP_FILE}"
+
+      - name: "Code increment #14 (race detection)"
+        if: always()
+        run: |
+          go test -v -race ./...

@@ -1,3 +1,4 @@
+// Package server is a server handler and storage.
 package server
 
 import (
@@ -13,12 +14,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/metricsAndAlerting/internal/db"
-	"github.com/metricsAndAlerting/internal/middleware"
-	client "github.com/metricsAndAlerting/internal/models"
+	"github.com/iddanilov/metricsAndAlerting/internal/db"
+	"github.com/iddanilov/metricsAndAlerting/internal/middleware"
+	client "github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
-type routerGroup struct {
+type RouterGroup struct {
 	rg    *gin.RouterGroup
 	s     *Storage
 	key   string
@@ -26,8 +27,9 @@ type routerGroup struct {
 	useDB bool
 }
 
-func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *db.DB, useDB bool) *routerGroup {
-	return &routerGroup{
+// NewRouterGroup - create new gin route group
+func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *db.DB, useDB bool) *RouterGroup {
+	return &RouterGroup{
 		rg:    rg,
 		s:     s,
 		key:   key,
@@ -36,7 +38,7 @@ func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *db.DB, useD
 	}
 }
 
-func (h *routerGroup) Routes() {
+func (h *RouterGroup) Routes() {
 	group := h.rg.Group("/")
 	group.Use()
 	{
@@ -50,7 +52,8 @@ func (h *routerGroup) Routes() {
 	}
 }
 
-func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
+// Ping - GET request for checking db working.
+func (h *RouterGroup) Ping(c *gin.Context) ([]byte, error) {
 	log.Println("Ping")
 	if h.db.DB == nil {
 		err := errors.New("can't connect to db")
@@ -65,7 +68,8 @@ func (h *routerGroup) Ping(c *gin.Context) ([]byte, error) {
 	return nil, nil
 }
 
-func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
+// GetMetric - GET request for get metric by body value
+func (h *RouterGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	var hashValue string
 	var err error
 	r := c.Request
@@ -127,7 +131,8 @@ func (h *routerGroup) GetMetric(c *gin.Context) ([]byte, error) {
 
 }
 
-func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
+// GetMetricByPath - GET request for get metric by url value
+func (h *RouterGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	var err error
@@ -197,7 +202,8 @@ func (h *routerGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	return response, nil
 }
 
-func (h *routerGroup) MetricList(c *gin.Context) ([]byte, error) {
+// MetricList - GET request for get all metrics
+func (h *RouterGroup) MetricList(c *gin.Context) ([]byte, error) {
 	c.Writer.Header().Set("Content-Type", "text/html")
 	var values []string
 	var err error
@@ -215,7 +221,8 @@ func (h *routerGroup) MetricList(c *gin.Context) ([]byte, error) {
 	return []byte(createResponse(values)), nil
 }
 
-func (h *routerGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
+// UpdateMetricByPath - GET request for update metric by url value
+func (h *RouterGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	log.Println("UpdateMetricByPath Metrics", r.URL)
@@ -288,7 +295,8 @@ func (h *routerGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 	return nil, nil
 }
 
-func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
+// UpdateMetric - POST request for update metric by body value
+func (h *RouterGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	requestBody := client.Metrics{}
@@ -376,7 +384,8 @@ func (h *routerGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	return nil, nil
 }
 
-func (h *routerGroup) UpdateMetrics(c *gin.Context) ([]byte, error) {
+// UpdateMetrics - POST request for update all metrics in body by body value
+func (h *RouterGroup) UpdateMetrics(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	log.Println("UpdateMetric Metrics", r.URL)

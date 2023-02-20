@@ -6,14 +6,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/metricsAndAlerting/internal/db"
-	client "github.com/metricsAndAlerting/internal/models"
+	"github.com/iddanilov/metricsAndAlerting/internal/db"
+	client "github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
 var (
@@ -129,10 +128,8 @@ func TestSendGauge(t *testing.T) {
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			// определяем хендлер
-			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
-				Mutex:   &mu,
 			}
 			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 			if err != nil {
@@ -273,10 +270,8 @@ func TestSendCounter(t *testing.T) {
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			// определяем хендлер
-			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
-				Mutex:   &mu,
 			}
 			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 			if err != nil {
@@ -359,10 +354,8 @@ func TestGetMetric(t *testing.T) {
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			// определяем хендлер
-			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
-				Mutex:   &mu,
 			}
 			if !tt.metricResult.MetricISEmpty() {
 				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: tt.metricResult.Value, Delta: tt.metricResult.Delta}
@@ -447,10 +440,8 @@ func TestGetGauge(t *testing.T) {
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			// определяем хендлер
-			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
-				Mutex:   &mu,
 			}
 			if !tt.metricResult.MetricISEmpty() {
 				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: tt.metricResult.Value, Delta: tt.metricResult.Delta}
@@ -537,10 +528,8 @@ func TestGetMetrics(t *testing.T) {
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
 			// определяем хендлер
-			mu := sync.Mutex{}
 			storage := Storage{
 				Metrics: make(map[string]client.Metrics, 10),
-				Mutex:   &mu,
 			}
 			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 			if err != nil {

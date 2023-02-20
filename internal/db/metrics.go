@@ -6,7 +6,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/metricsAndAlerting/internal/models"
+	"github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
 type Metrics struct {
