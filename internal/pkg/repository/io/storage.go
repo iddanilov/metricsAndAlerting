@@ -12,7 +12,7 @@ import (
 
 type Storage struct {
 	Metrics map[string]models.Metrics
-	Mutex   *sync.Mutex
+	mutex   sync.Mutex
 	File    string
 }
 
@@ -27,10 +27,9 @@ func NewStorages(ctx context.Context, cfg models.IO) *Storage {
 			events = result
 		}
 	}
-
 	return &Storage{
 		Metrics: events,
-		Mutex:   &sync.Mutex{},
+		mutex:   sync.Mutex{},
 		File:    cfg.StoreFile,
 	}
 }
@@ -50,12 +49,10 @@ func ReadEvents(fileName string) (metrics map[string]models.Metrics, err error) 
 	return metrics, nil
 }
 
-func (s *Storage) SaveMetricInFile(ctx context.Context) error {
+func (s *Storage) SaveMetricInFile() error {
 	if len(s.Metrics) == 0 {
 		return nil
 	}
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
 	file, err := os.OpenFile(s.File, os.O_WRONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return err
@@ -69,14 +66,14 @@ func (s *Storage) SaveMetricInFile(ctx context.Context) error {
 }
 
 func (s *Storage) SaveGaugeMetric(metric *models.Metrics) {
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	s.Metrics[metric.ID] = *metric
 }
 
 func (s *Storage) SaveCountMetric(metric models.Metrics) {
-	s.Mutex.Lock()
-	defer s.Mutex.Unlock()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	result := s.Metrics[metric.ID]
 	if result.Delta != nil {
 		*metric.Delta = *metric.Delta + *result.Delta

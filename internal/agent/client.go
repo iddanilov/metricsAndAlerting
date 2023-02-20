@@ -1,5 +1,5 @@
-// Package client - package clint application
-// Make config and client methods
+// Package client - package client application
+// Prepares config and client methods
 package client
 
 import (

@@ -63,7 +63,7 @@ func Run() {
 		for {
 			<-reportIntervalTicker.C
 			log.Println("Write data in storage")
-			err := file.SaveMetricInFile(ctx)
+			err := file.SaveMetricInFile()
 			if err != nil {
 				log.Println(err)
 			}
