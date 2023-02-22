@@ -20,7 +20,7 @@ type serverStorage struct {
 	logger  logger.Logger
 }
 
-func NewStorages(cfg *models.Config, logger logger.Logger) serverapp.Storage {
+func NewStorages(cfg *models.Server, logger logger.Logger) serverapp.Storage {
 	events := make(map[string]client.Metrics, 10)
 	if cfg.Restore {
 		result, err := readEvents(cfg.StoreFile)

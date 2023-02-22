@@ -23,7 +23,7 @@ type Storage struct {
 	IO
 }
 
-type Config struct {
+type Server struct {
 	ServerConfig
 	Storage
 }

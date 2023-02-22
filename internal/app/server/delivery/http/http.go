@@ -2,23 +2,24 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
+
+	serverApp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
 	serverapp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/middleware"
-	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/io"
 )
 
 type routerGroup struct {
-	rg  *gin.RouterGroup
-	s   *io.Storage
-	key string
-	uc  serverapp.Usecase
+	rg      *gin.RouterGroup
+	storage serverApp.Storage
+	key     string
+	uc      serverapp.Usecase
 }
 
 // NewRouterGroup - create new gin route group
-func NewRouterGroup(rg *gin.RouterGroup, serverUseCase serverapp.Usecase) *routerGroup {
+func NewRouterGroup(rg *gin.RouterGroup, serverUseCase serverapp.Usecase, storage serverApp.Storage) *routerGroup {
 	return &routerGroup{
-		rg: rg,
-		//s:             s,
+		rg:      rg,
+		storage: storage,
 		//key:           key,
 		uc: serverUseCase,
 	}

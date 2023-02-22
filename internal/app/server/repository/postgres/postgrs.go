@@ -15,38 +15,23 @@ type serverRepository struct {
 	logger logger.Logger
 }
 
-func NewServerRepository(db postgresql.DB, logger logger.Logger) server.Repository {
+func NewServerRepository(ctx context.Context, db postgresql.DB, logger logger.Logger, useDB bool) (server.Repository, error) {
+	if !useDB {
+		return nil, nil
+	}
+	err := CreateTable(ctx, db, logger)
+	if err != nil {
+		logger.Error(err)
+		return nil, err
+	}
 	return &serverRepository{
 		logger: logger,
 		db:     db,
-	}
+	}, nil
 }
 
 func (r *serverRepository) Ping() error {
 	return r.db.DB.Ping()
-}
-
-func (r *serverRepository) CreateTable(ctx context.Context) error {
-	row, err := r.db.DB.Query(checkMetricDB)
-	if err != nil {
-		if err.Error() == `pq: relation "metrics" does not exist` {
-			_, err = r.db.DB.ExecContext(ctx, createTable)
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	}
-	if row != nil {
-		if row.Err() != nil {
-			return err
-		}
-
-	}
-	r.logger.Info("DB Create")
-
-	return nil
 }
 
 func (r *serverRepository) UpdateMetric(ctx context.Context, metrics models.Metrics) error {

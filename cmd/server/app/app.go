@@ -15,7 +15,6 @@ import (
 	serverStorage "github.com/iddanilov/metricsAndAlerting/internal/app/server/repository/storage"
 	serverUseCase "github.com/iddanilov/metricsAndAlerting/internal/app/server/usecase"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
-	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/io"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/postgresql"
 )
 
@@ -40,6 +39,12 @@ func Run() {
 	r := gin.New()
 	r.RedirectTrailingSlash = false
 
+	//ginSwagger.WrapHandler(swaggerFiles.Handler,
+	//	ginSwagger.URL("http://localhost:8080/swagger/doc.json"),
+	//	ginSwagger.DefaultModelsExpandDepth(-1))
+	//
+	//pprof.Register(r)
+
 	// init db
 	pg := &postgresql.DB{}
 	if cfg.Postgres.DSN != "" {
@@ -47,15 +52,13 @@ func Run() {
 		if err != nil {
 			logger.Error(err)
 		}
-		err = pg.CreateTable(ctx)
-		if err != nil {
-			logger.Error(err)
-		}
 		useDB = true
 	}
-
-	// init IO storage
-	file := io.NewStorages(ctx, cfg.Storage.IO)
+	repository, err := serverRepository.NewServerRepository(ctx, *pg, logger, useDB)
+	if err != nil {
+		logger.Fatal("db didn't create")
+	}
+	storage := serverStorage.NewStorages(cfg, logger)
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
 
@@ -63,7 +66,7 @@ func Run() {
 		for {
 			<-reportIntervalTicker.C
 			log.Println("Write data in storage")
-			err := file.SaveMetricInFile()
+			err := storage.SaveMetricInFile()
 			if err != nil {
 				log.Println(err)
 			}
@@ -71,18 +74,9 @@ func Run() {
 
 	}(ctx)
 
-	//ginSwagger.WrapHandler(swaggerFiles.Handler,
-	//	ginSwagger.URL("http://localhost:8080/swagger/doc.json"),
-	//	ginSwagger.DefaultModelsExpandDepth(-1))
-	//
-	//pprof.Register(r)
-
-	repository := serverRepository.NewServerRepository(*pg, logger)
-	storage := serverStorage.NewStorages(cfg, logger)
-
 	useCase := serverUseCase.NewServerUseCase(repository, storage, logger, useDB, cfg.Key)
 
-	rg := serverDelivery.NewRouterGroup(&r.RouterGroup, useCase)
+	rg := serverDelivery.NewRouterGroup(&r.RouterGroup, useCase, storage)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

@@ -8,7 +8,6 @@ import (
 // Repository represent the metric and server repository contract
 type Repository interface {
 	Ping() error
-	CreateTable(ctx context.Context) error
 	UpdateMetric(ctx context.Context, metrics models.Metrics) error
 	UpdateMetrics(metrics []models.Metrics) error
 	GetMetric(ctx context.Context, metricID string) (models.Metrics, error)

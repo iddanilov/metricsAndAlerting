@@ -10,7 +10,6 @@ type Storage interface {
 	GetMetric(requestBody client.Metrics) (client.Metrics, error)
 	GetMetricValue(name string) (*float64, error)
 	GetMetricDelta(name string) (*int64, error)
-
 	SaveGaugeMetric(metric *client.Metrics)
 	SaveCountMetric(metric client.Metrics)
 	GetMetricsByPath() ([]string, error)

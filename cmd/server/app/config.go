@@ -22,8 +22,8 @@ var (
 	LoggerLevel   = flag.StringP("l", "l", "debug", "LoggerLevel")
 )
 
-func NewConfig() *models.Config {
-	var cfg models.Config
+func NewConfig() *models.Server {
+	var cfg models.Server
 
 	err := env.Parse(&cfg)
 	if err != nil {
