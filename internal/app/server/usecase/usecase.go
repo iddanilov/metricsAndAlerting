@@ -186,7 +186,7 @@ func (u *serverUseCase) MetricList(c *gin.Context) ([]byte, error) {
 			return nil, err
 		}
 	} else {
-		values, err = u.storage.GetMetricsByPath()
+		values, err = u.storage.GetMetricsList()
 		if err != nil {
 			return nil, err
 		}

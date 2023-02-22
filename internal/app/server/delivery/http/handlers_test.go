@@ -2,18 +2,16 @@ package http
 
 //
 //import (
-//	"io"
-//	"log"
-//	"net/http"
-//	"net/http/httptest"
-//	"strings"
-//	"testing"
-//
-//	"github.com/gin-gonic/gin"
-//	"github.com/stretchr/testify/assert"
-//
-//	"github.com/iddanilov/metricsAndAlerting/internal/db"
-//	client "github.com/iddanilov/metricsAndAlerting/internal/models"
+//	"context"
+//	serverApp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
+//	serverapp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
+//	serverRepository "github.com/iddanilov/metricsAndAlerting/internal/app/server/repository/postgres"
+//	"github.com/iddanilov/metricsAndAlerting/internal/app/server/repository/storage"
+//	serverUseCase "github.com/iddanilov/metricsAndAlerting/internal/app/server/usecase"
+//	"github.com/iddanilov/metricsAndAlerting/internal/models"
+//	"github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
+//	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/postgresql"
+//	db "github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/postgresql"
 //)
 //
 //var (
@@ -23,11 +21,51 @@ package http
 //	baseZeroInt   int64   = 0
 //)
 //
+//func InitTestHandlers() *testHandlers {
+//	logger := logger.GetLogger("debug")
+//	logger.Logger.Info("Init logger")
+//	cfg := &models.Server{
+//		Storage: models.Storage{
+//			IO: models.IO{
+//				Restore:   true,
+//				StoreFile: "/tmp/devops-metrics-db.json",
+//			},
+//		},
+//	}
+//	storage := storage.NewStorages(cfg, logger)
+//
+//	db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
+//	if err != nil {
+//		panic(err)
+//	}
+//	repository, err := serverRepository.NewServerRepository(context.Background(), *db, logger, true)
+//	if err != nil {
+//		logger.Fatal("db didn't create")
+//	}
+//
+//	us := serverUseCase.NewServerUseCase(repository, storage, logger, true, cfg.Key)
+//
+//	return &testHandlers{
+//		us:      us,
+//		logger:  logger,
+//		db:      db,
+//		storage: storage,
+//	}
+//
+//}
+//
+//type testHandlers struct {
+//	logger  logger.Logger
+//	us      serverApp.Usecase
+//	db      *postgresql.DB
+//	storage serverapp.Storage
+//}
+
 //func TestSendGauge(t *testing.T) {
 //	// определяем структуру теста
 //	type want struct {
 //		code         int
-//		metricResult client.Metrics
+//		metricResult models.Metrics
 //	}
 //	// создаём массив тестов: имя и желаемый результат
 //	tests := []struct {
@@ -41,7 +79,7 @@ package http
 //			url:  "/update/Gauge/Alloc/5.5",
 //			want: want{
 //				code: 200,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "Alloc",
 //					MType: "Gauge",
 //					Value: &baseFloat,
@@ -53,7 +91,7 @@ package http
 //			url:  "/update/Gauge/Alloc/5.5/",
 //			want: want{
 //				code: http.StatusNotFound,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "",
 //					MType: "",
 //					Value: &baseZeroFloat,
@@ -65,7 +103,7 @@ package http
 //			url:  "/unknown/Gauge/Alloc/5.5",
 //			want: want{
 //				code: http.StatusNotFound,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "",
 //					MType: "",
 //					Value: &baseZeroFloat,
@@ -77,7 +115,7 @@ package http
 //			url:  "/unknown/Gauge/Alloc/",
 //			want: want{
 //				code: http.StatusNotFound,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "",
 //					MType: "",
 //					Value: &baseZeroFloat,
@@ -89,7 +127,7 @@ package http
 //			url:  "/update/Gauge",
 //			want: want{
 //				code: http.StatusNotFound,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "",
 //					MType: "",
 //					Value: &baseZeroFloat,
@@ -101,7 +139,7 @@ package http
 //			url:  "/update/Gauge/Alloc/none",
 //			want: want{
 //				code: 400,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "",
 //					MType: "",
 //					Value: &baseZeroFloat,
@@ -113,7 +151,7 @@ package http
 //			url:  "/updater/Gauge/Alloc/5.5",
 //			want: want{
 //				code: http.StatusNotFound,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "",
 //					MType: "",
 //					Value: &baseZeroFloat,
@@ -124,22 +162,17 @@ package http
 //	for _, tt := range tests {
 //		// запускаем каждый тест
 //		t.Run(tt.name, func(t *testing.T) {
-//			request := httptest.NewRequest(http.MethodPost, tt.url, nil)
-//			request.Header.Set("Content-Type", "text/plain")
+//
 //			// создаём новый Recorder
 //			w := httptest.NewRecorder()
-//			// определяем хендлер
-//			storage := Storage{
-//				Metrics: make(map[string]client.Metrics, 10),
-//			}
-//			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
-//			if err != nil {
-//				panic(err)
-//			}
+//
+//			request := httptest.NewRequest(http.MethodPost, tt.url, nil)
+//			request.Header.Set("Content-Type", "text/plain")
 //
 //			r := gin.New()
 //			r.RedirectTrailingSlash = false
-//			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, false)
+//			handlers := InitTestHandlers()
+//			rg := NewRouterGroup(&r.RouterGroup, handlers.us)
 //			rg.Routes()
 //
 //			// запускаем сервер
@@ -151,24 +184,28 @@ package http
 //				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
 //			}
 //
-//			assert.Equal(t, tt.want.metricResult.ID, storage.Metrics[tt.want.metricResult.ID].ID, "Can't save metric")
-//			assert.Equal(t, tt.want.metricResult.MType, storage.Metrics[tt.want.metricResult.ID].MType, "Can't save metric")
+//			metricValue, err := handlers.storage.GetMetricValue(tt.want.metricResult.ID)
+//
+//			//assert.Equal(t, tt.want.metricResult.ID, handlers.storage.GetMetricValue(tt.want.metricResult.ID) [tt.want.metricResult.ID].ID, "Can't save metric")
+//			//assert.Equal(t, tt.want.metricResult.MType, storage.Metrics[tt.want.metricResult.ID].MType, "Can't save metric")
 //			if *tt.want.metricResult.Value != 0 {
-//				assert.Equal(t, *tt.want.metricResult.Value, *storage.Metrics[tt.want.metricResult.ID].Value, "Can't save metric")
+//				assert.Equal(t, *tt.want.metricResult.Value, metricValue, "Can't save metric")
+//				assert.NoError(t, err)
 //			} else {
-//				assert.Equal(t, storage.Metrics, map[string]client.Metrics{})
+//				assert.ErrorIs(t, err, errors.New("metrics not found"))
 //			}
 //			// получаем и проверяем тело запроса
 //			defer res.Body.Close()
 //		})
 //	}
 //}
+
 //
 //func TestSendCounter(t *testing.T) {
 //	// определяем структуру теста
 //	type want struct {
 //		code         int
-//		metricResult client.Metrics
+//		metricResult models.Metrics
 //	}
 //	// создаём массив тестов: имя и желаемый результат
 //	tests := []struct {
@@ -182,7 +219,7 @@ package http
 //			url:  "/update/Counter/PollCount/5",
 //			want: want{
 //				code: 200,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "PollCount",
 //					MType: "Counter",
 //					Delta: &baseInt,
@@ -194,7 +231,7 @@ package http
 //			url:  "/update/Counter/PollCount/5/",
 //			want: want{
 //				code: http.StatusNotFound,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "",
 //					MType: "",
 //					Delta: &baseZeroInt,
@@ -206,7 +243,7 @@ package http
 //			url:  "/unknown/Counter/PollCount/5",
 //			want: want{
 //				code: http.StatusNotFound,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "",
 //					MType: "",
 //					Delta: &baseZeroInt,
@@ -218,7 +255,7 @@ package http
 //			url:  "/unknown/Counter/PollCount/",
 //			want: want{
 //				code: http.StatusNotFound,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "",
 //					MType: "",
 //					Delta: &baseZeroInt,
@@ -230,7 +267,7 @@ package http
 //			url:  "/update/Counter",
 //			want: want{
 //				code: http.StatusNotFound,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "",
 //					MType: "",
 //					Delta: &baseZeroInt,
@@ -242,7 +279,7 @@ package http
 //			url:  "/update/Counter/PollCount/none",
 //			want: want{
 //				code: 400,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "",
 //					MType: "",
 //					Delta: &baseZeroInt,
@@ -254,7 +291,7 @@ package http
 //			url:  "/updater/Counter/PollCount/5",
 //			want: want{
 //				code: http.StatusNotFound,
-//				metricResult: client.Metrics{
+//				metricResult: models.Metrics{
 //					ID:    "",
 //					MType: "",
 //					Delta: &baseZeroInt,
@@ -266,21 +303,15 @@ package http
 //		// запускаем каждый тест
 //		t.Run(tt.name, func(t *testing.T) {
 //
-//			request := httptest.NewRequest(http.MethodPost, tt.url, nil)
-//			request.Header.Set("Content-Type", "text/plain")
 //			// создаём новый Recorder
 //			w := httptest.NewRecorder()
-//			// определяем хендлер
-//			storage := Storage{
-//				Metrics: make(map[string]client.Metrics, 10),
-//			}
-//			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
-//			if err != nil {
-//				panic(err)
-//			}
+//
+//			request := httptest.NewRequest(http.MethodPost, tt.url, nil)
+//			request.Header.Set("Content-Type", "text/plain")
+//
 //			r := gin.New()
 //			r.RedirectTrailingSlash = false
-//			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, false)
+//			rg := NewRouterGroup(&r.RouterGroup, fixtureUseCase())
 //			rg.Routes()
 //
 //			// запускаем сервер
@@ -297,7 +328,7 @@ package http
 //			if *tt.want.metricResult.Delta != 0 {
 //				assert.Equal(t, *tt.want.metricResult.Delta, *storage.Metrics[tt.want.metricResult.ID].Delta, "Can't save metric")
 //			} else {
-//				assert.Equal(t, storage.Metrics, map[string]client.Metrics{})
+//				assert.Equal(t, storage.Metrics, map[string]models.Metrics{})
 //			}
 //			// получаем и проверяем тело запроса
 //			defer res.Body.Close()
@@ -315,15 +346,15 @@ package http
 //	tests := []struct {
 //		name                string
 //		url                 string
-//		metricResult        client.Metrics
-//		counterMetricResult client.Metrics
+//		metricResult        models.Metrics
+//		counterMetricResult models.Metrics
 //		want                want
 //	}{
 //		// определяем все тесты
 //		{
 //			name: "[Positive] Запрос на получение метрики типа gauge с названием Alloc - получаю 200; получаю значение метрики",
 //			url:  "/value/Gauge/Alloc",
-//			metricResult: client.Metrics{
+//			metricResult: models.Metrics{
 //				ID:    "Alloc",
 //				MType: "Gauge",
 //				Value: &baseFloat,
@@ -336,7 +367,7 @@ package http
 //		{
 //			name: "[Negative] Запрос на получение метрики типа counter с названием PollCount - получаю 200; получаю значение метрики",
 //			url:  "/value/Counter/PollCount",
-//			counterMetricResult: client.Metrics{
+//			counterMetricResult: models.Metrics{
 //				ID:    "PollCount",
 //				MType: "Counter",
 //				Delta: &baseInt,
@@ -350,27 +381,15 @@ package http
 //	for _, tt := range tests {
 //		// запускаем каждый тест
 //		t.Run(tt.name, func(t *testing.T) {
-//			request := httptest.NewRequest(http.MethodGet, tt.url, nil)
-//			request.Header.Set("Content-Type", "application/json")
 //			// создаём новый Recorder
 //			w := httptest.NewRecorder()
-//			// определяем хендлер
-//			storage := Storage{
-//				Metrics: make(map[string]client.Metrics, 10),
-//			}
-//			if !tt.metricResult.MetricISEmpty() {
-//				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: tt.metricResult.Value, Delta: tt.metricResult.Delta}
-//			}
-//			if !tt.counterMetricResult.MetricISEmpty() {
-//				storage.Metrics[tt.counterMetricResult.ID] = client.Metrics{ID: tt.counterMetricResult.ID, MType: tt.counterMetricResult.MType, Value: tt.counterMetricResult.Value, Delta: tt.counterMetricResult.Delta}
-//			}
+//
+//			request := httptest.NewRequest(http.MethodPost, tt.url, nil)
+//			request.Header.Set("Content-Type", "text/plain")
+//
 //			r := gin.New()
 //			r.RedirectTrailingSlash = false
-//			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
-//			if err != nil {
-//				panic(err)
-//			}
-//			rg := NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, false)
+//			rg := NewRouterGroup(&r.RouterGroup, fixtureUseCase())
 //			rg.Routes()
 //
 //			// запускаем сервер
@@ -401,15 +420,15 @@ package http
 //	tests := []struct {
 //		name                string
 //		url                 string
-//		metricResult        client.Metrics
-//		counterMetricResult client.Metrics
+//		metricResult        models.Metrics
+//		counterMetricResult models.Metrics
 //		want                want
 //	}{
 //		// определяем все тесты
 //		{
 //			name: "[Positive] Запрос на получение метрики типа gauge с названием Alloc - получаю 200; получаю значение метрики",
 //			url:  "/value/Gauge/Alloc",
-//			metricResult: client.Metrics{
+//			metricResult: models.Metrics{
 //				ID:    "Alloc",
 //				MType: "Gauge",
 //				Value: &baseFloat,
@@ -422,7 +441,7 @@ package http
 //		{
 //			name: "[Positive] Запрос на получение метрики типа counter с названием PollCount - получаю 200; получаю значение метрики",
 //			url:  "/value/Counter/PollCount",
-//			metricResult: client.Metrics{
+//			metricResult: models.Metrics{
 //				ID:    "PollCount",
 //				MType: "Counter",
 //				Delta: &baseInt,
@@ -440,16 +459,23 @@ package http
 //			request.Header.Set("Content-Type", "text/plain")
 //			// создаём новый Recorder
 //			w := httptest.NewRecorder()
-//			// определяем хендлер
-//			storage := Storage{
-//				Metrics: make(map[string]client.Metrics, 10),
+//			logger := logger.GetLogger("debug")
+//			logger.Logger.Info("Init logger")
+//			cfg := &models.Server{
+//				Storage: models.Storage{
+//					IO: models.IO{
+//						Restore:   true,
+//						StoreFile: "/tmp/devops-metrics-db.json",
+//					},
+//				},
 //			}
+//			storage := storage.NewStorages(cfg, logger)
 //			if !tt.metricResult.MetricISEmpty() {
-//				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: tt.metricResult.Value, Delta: tt.metricResult.Delta}
-//				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: tt.metricResult.Value, Delta: tt.metricResult.Delta}
+//				storage.Metrics[tt.metricResult.ID] = models.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: tt.metricResult.Value, Delta: tt.metricResult.Delta}
+//				storage.Metrics[tt.metricResult.ID] = models.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: tt.metricResult.Value, Delta: tt.metricResult.Delta}
 //			}
 //			if !tt.counterMetricResult.MetricISEmpty() {
-//				storage.Metrics[tt.counterMetricResult.ID] = client.Metrics{ID: tt.counterMetricResult.ID, MType: tt.counterMetricResult.MType, Value: tt.counterMetricResult.Value, Delta: tt.counterMetricResult.Delta}
+//				storage.Metrics[tt.counterMetricResult.ID] = models.Metrics{ID: tt.counterMetricResult.ID, MType: tt.counterMetricResult.MType, Value: tt.counterMetricResult.Value, Delta: tt.counterMetricResult.Delta}
 //			}
 //			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 //			if err != nil {
@@ -528,10 +554,17 @@ package http
 //			log.Println(request)
 //			// создаём новый Recorder
 //			w := httptest.NewRecorder()
-//			// определяем хендлер
-//			storage := Storage{
-//				Metrics: make(map[string]client.Metrics, 10),
+//			logger := logger.GetLogger("debug")
+//			logger.Logger.Info("Init logger")
+//			cfg := &models.Server{
+//				Storage: models.Storage{
+//					IO: models.IO{
+//						Restore:   true,
+//						StoreFile: "/tmp/devops-metrics-db.json",
+//					},
+//				},
 //			}
+//			storage := storage.NewStorages(cfg, logger)
 //			db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 //			if err != nil {
 //				panic(err)
@@ -567,19 +600,19 @@ package http
 //	// создаём массив тестов: имя и желаемый результат
 //	tests := []struct {
 //		name              string
-//		metricResult      client.Metrics
-//		countMetricResult client.Metrics
+//		metricResult      models.Metrics
+//		countMetricResult models.Metrics
 //		result            string
 //	}{
 //		// определяем все тесты
 //		{
 //			name: "[Positive] Проверка метода GetCreateResponse",
-//			metricResult: client.Metrics{
+//			metricResult: models.Metrics{
 //				ID:    "Alloc",
 //				MType: "Gauge",
 //				Value: &baseZeroFloat,
 //			},
-//			countMetricResult: client.Metrics{
+//			countMetricResult: models.Metrics{
 //				ID:    "PollCount",
 //				MType: "Counter",
 //				Delta: &baseInt,
@@ -590,15 +623,23 @@ package http
 //	for _, tt := range tests {
 //		// запускаем каждый тест
 //		t.Run(tt.name, func(t *testing.T) {
-//			storage := Storage{
-//				Metrics: make(map[string]client.Metrics, 10),
+//			logger := logger.GetLogger("debug")
+//			logger.Logger.Info("Init logger")
+//			cfg := &models.Server{
+//				Storage: models.Storage{
+//					IO: models.IO{
+//						Restore:   true,
+//						StoreFile: "/tmp/devops-metrics-db.json",
+//					},
+//				},
 //			}
+//			storage := storage.NewStorages(cfg, logger)
 //			if !tt.metricResult.MetricISEmpty() {
-//				storage.Metrics[tt.metricResult.ID] = client.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: tt.metricResult.Value, Delta: tt.metricResult.Delta}
+//				storage.Metrics[tt.metricResult.ID] = models.Metrics{ID: tt.metricResult.ID, MType: tt.metricResult.MType, Value: tt.metricResult.Value, Delta: tt.metricResult.Delta}
 //
 //			}
 //			if !tt.countMetricResult.MetricISEmpty() {
-//				storage.Metrics[tt.countMetricResult.ID] = client.Metrics{ID: tt.countMetricResult.ID, MType: tt.countMetricResult.MType, Value: tt.countMetricResult.Value, Delta: tt.countMetricResult.Delta}
+//				storage.Metrics[tt.countMetricResult.ID] = models.Metrics{ID: tt.countMetricResult.ID, MType: tt.countMetricResult.MType, Value: tt.countMetricResult.Value, Delta: tt.countMetricResult.Delta}
 //			}
 //			var result []string
 //			for s := range storage.Metrics {

@@ -2,34 +2,29 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-
 	serverApp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
-	serverapp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/middleware"
 )
 
-type routerGroup struct {
-	rg      *gin.RouterGroup
-	storage serverApp.Storage
-	key     string
-	uc      serverapp.Usecase
+type RouterGroup struct {
+	rg *gin.RouterGroup
+	uc serverApp.Usecase
 }
 
 // NewRouterGroup - create new gin route group
-func NewRouterGroup(rg *gin.RouterGroup, serverUseCase serverapp.Usecase, storage serverApp.Storage) *routerGroup {
-	return &routerGroup{
-		rg:      rg,
-		storage: storage,
-		//key:           key,
+func NewRouterGroup(rg *gin.RouterGroup, serverUseCase serverApp.Usecase) *RouterGroup {
+	return &RouterGroup{
+		rg: rg,
 		uc: serverUseCase,
 	}
 }
 
-func (h *routerGroup) Routes() {
-	group := h.rg.Group("/")
+func (rg *RouterGroup) Routes() {
+	h := NewHandlers(rg.uc)
+	group := rg.rg.Group("/")
 	group.Use()
 	{
-		group.GET("/", middleware.Middleware(h.uc.MetricList))
+		group.GET("/", middleware.Middleware(h.MetricList))
 		group.POST("/update/:type/:name/:value", middleware.Middleware(h.uc.UpdateMetricByPath))
 		group.POST("/update/", middleware.Middleware(h.uc.UpdateMetric))
 		group.POST("/updates/", middleware.Middleware(h.uc.UpdateMetrics))

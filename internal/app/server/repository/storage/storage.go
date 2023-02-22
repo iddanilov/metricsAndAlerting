@@ -9,19 +9,18 @@ import (
 
 	serverapp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
 	"github.com/iddanilov/metricsAndAlerting/internal/models"
-	client "github.com/iddanilov/metricsAndAlerting/internal/models"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
 )
 
 type serverStorage struct {
-	Metrics map[string]client.Metrics
+	Metrics map[string]models.Metrics
 	mutex   sync.Mutex
 	File    string
 	logger  logger.Logger
 }
 
 func NewStorages(cfg *models.Server, logger logger.Logger) serverapp.Storage {
-	events := make(map[string]client.Metrics, 10)
+	events := make(map[string]models.Metrics, 10)
 	if cfg.Restore {
 		result, err := readEvents(cfg.StoreFile)
 		if err != nil {
@@ -39,7 +38,7 @@ func NewStorages(cfg *models.Server, logger logger.Logger) serverapp.Storage {
 	}
 }
 
-func (s *serverStorage) GetMetricsByPath() (values []string, err error) {
+func (s *serverStorage) GetMetricsList() (values []string, err error) {
 	for _, m := range s.Metrics {
 		values = append(values, m.ID)
 	}
@@ -83,22 +82,22 @@ func (s *serverStorage) SaveMetricInFile() error {
 	return err
 }
 
-func (s *serverStorage) GetMetric(requestBody client.Metrics) (client.Metrics, error) {
+func (s *serverStorage) GetMetric(requestBody models.Metrics) (models.Metrics, error) {
 	metric, ok := s.Metrics[requestBody.ID]
 	if !ok {
-		return client.Metrics{}, errors.New("metrics not found")
+		return models.Metrics{}, errors.New("metrics not found")
 	}
 	metric.MType = strings.ToLower(metric.MType)
 	return metric, nil
 }
 
-func (s *serverStorage) SaveGaugeMetric(metric *client.Metrics) {
+func (s *serverStorage) SaveGaugeMetric(metric *models.Metrics) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.Metrics[metric.ID] = *metric
 }
 
-func (s *serverStorage) SaveCountMetric(metric client.Metrics) {
+func (s *serverStorage) SaveCountMetric(metric models.Metrics) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	result := s.Metrics[metric.ID]
@@ -109,7 +108,7 @@ func (s *serverStorage) SaveCountMetric(metric client.Metrics) {
 
 }
 
-func readEvents(fileName string) (metrics map[string]client.Metrics, err error) {
+func readEvents(fileName string) (metrics map[string]models.Metrics, err error) {
 	file, err := os.OpenFile(fileName, os.O_RDONLY|os.O_CREATE, 0777)
 	defer func(file *os.File) {
 		err = file.Close()

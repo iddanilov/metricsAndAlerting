@@ -76,7 +76,7 @@ func Run() {
 
 	useCase := serverUseCase.NewServerUseCase(repository, storage, logger, useDB, cfg.Key)
 
-	rg := serverDelivery.NewRouterGroup(&r.RouterGroup, useCase, storage)
+	rg := serverDelivery.NewRouterGroup(&r.RouterGroup, useCase)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
