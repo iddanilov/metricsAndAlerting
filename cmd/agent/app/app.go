@@ -30,7 +30,7 @@ func Run() {
 	logger := logger.GetLogger(cfg.AgentConfig.LoggerLevel)
 	logger.Logger.Info("Init logger")
 
-	useCase := agentUseCase.NewAgentUseCase(logger, cfg.AgentConfig.Key)
+	useCase := agentUseCase.NewAgentUseCase(logger, cfg.AgentConfig.Key, cfg.AgentConfig.Address)
 
 	runtimeStats := runtime.MemStats{}
 	requestValue := models.Metrics{}

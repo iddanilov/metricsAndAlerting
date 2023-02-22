@@ -10,7 +10,6 @@ import (
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/crypto"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
 	"github.com/shirou/gopsutil/v3/mem"
-	"log"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -25,13 +24,14 @@ type agentUseCase struct {
 	httpClient *http.Client
 }
 
-func NewAgentUseCase(logger logger.Logger, key string) agentApp.AgentUseCase {
+func NewAgentUseCase(logger logger.Logger, key, address string) agentApp.AgentUseCase {
 	return &agentUseCase{
 		logger: logger,
 		httpClient: &http.Client{
 			Timeout: time.Minute,
 		},
-		key: key,
+		key:     key,
+		address: address,
 	}
 }
 
@@ -73,6 +73,7 @@ func (u *agentUseCase) SendMetric(metrics models.Metrics) error {
 }
 
 func (u *agentUseCase) sendRequest(req *http.Request) error {
+	u.logger.Debug("req params in func sendRequest: ", req)
 	resp, err := u.httpClient.Do(req)
 	if err != nil {
 		return err
@@ -95,7 +96,7 @@ func (u *agentUseCase) SendMetrics(jobs <-chan []models.Metrics, cfg *models.Age
 							fmt.Sprintf(
 								"%s:gauge:%f", metrics.ID, *metrics.Value), []byte(cfg.AgentConfig.Key))
 						if err != nil {
-							log.Fatal(err)
+							u.logger.Fatal("can't create hash for gauge in func: crypto.CreateHash with error:", err)
 						}
 						metrics.Hash = hashValue
 					} else if metrics.Delta != nil {
@@ -104,22 +105,22 @@ func (u *agentUseCase) SendMetrics(jobs <-chan []models.Metrics, cfg *models.Age
 								fmt.Sprintf(
 									"%s:counter:%d", metrics.ID, *metrics.Delta), []byte(cfg.AgentConfig.Key))
 							if err != nil {
-								log.Fatal(err)
+								u.logger.Fatal("can't create hash for counter in func: crypto.CreateHash with error:", err)
+
 							}
 							metrics.Hash = hashValue
 						}
 					}
 				}
-
-				log.Println("body: ", metrics)
-
+				u.logger.Debug("metric body: ", metrics)
 				err := u.SendMetricByPath(metrics)
 				if err != nil {
-					log.Println("Err: ", err.Error())
+					u.logger.Error("can't send metric in func SendMetricByPath with error: ", err)
 				}
 				err = u.SendMetric(metrics)
 				if err != nil {
-					log.Println("Err: ", err.Error())
+					u.logger.Error("can't send metric in func SendMetric with error: ", err)
+
 				}
 			}
 		}
@@ -134,7 +135,7 @@ func (u *agentUseCase) GetRuntimeStat(metrics *runtime.MemStats) {
 func (u *agentUseCase) GetVirtualMemoryStat(ctx context.Context) *mem.VirtualMemoryStat {
 	metrics, err := mem.VirtualMemory()
 	if err != nil {
-		log.Println("Error: ", err)
+		u.logger.Error("can't get mem params in func mem.VirtualMemory() with error: ", err)
 		<-ctx.Done()
 	}
 	return metrics
