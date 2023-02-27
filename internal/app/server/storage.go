@@ -4,6 +4,8 @@ import (
 	"github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
+//go:generate mockgen -package mock -destination usecase/storage/mock/server_mock.go -source=usecase.go
+
 // Storage represent the metric and server's storage
 type Storage interface {
 	SaveMetricInFile() error

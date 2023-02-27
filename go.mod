@@ -1,6 +1,6 @@
 module github.com/iddanilov/metricsAndAlerting
 
-go 1.18
+go 1.20
 
 require (
 	github.com/caarlos0/env/v6 v6.10.1
@@ -10,6 +10,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/pflag v1.0.5
+	github.com/stretchr/testify v1.8.1
 	github.com/swaggo/files v1.0.0
 	github.com/swaggo/gin-swagger v1.5.3
 )
@@ -43,7 +44,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/swaggo/swag v1.8.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect

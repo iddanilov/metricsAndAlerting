@@ -5,6 +5,8 @@ import (
 	"github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
+//go:generate mockgen -package mock -destination repository/postgres/mock/server_mock.go -source=repository.go
+
 // Repository represent the metric and server repository contract
 type Repository interface {
 	Ping() error

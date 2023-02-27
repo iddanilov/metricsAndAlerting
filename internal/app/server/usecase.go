@@ -4,6 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//go:generate mockgen -package mock -destination usecase/mock/server_mock.go -source=usecase.go
+
 // Usecase represent the metric and server's usecases
 type Usecase interface {
 	Ping(c *gin.Context) ([]byte, error)
