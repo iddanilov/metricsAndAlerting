@@ -1,10 +1,9 @@
-//go:build buildVersion
-
 // Package server/main running server application
 package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
