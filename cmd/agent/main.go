@@ -28,8 +28,14 @@ const (
 
 const numJobs = 25
 
+var buildVersion string
+var buildDate string
+var buildCommit string
+
 func main() {
 	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+
+	StartServer()
 
 	respClient := client.NewClient()
 	runtimeStats := runtime.MemStats{}
@@ -131,4 +137,19 @@ func GetVirtualMemoryStat(ctx context.Context) *mem.VirtualMemoryStat {
 		<-ctx.Done()
 	}
 	return metrics
+}
+
+func StartServer() {
+	if buildVersion == "" {
+		buildVersion = "N/A"
+	}
+	if buildDate == "" {
+		buildDate = "N/A"
+	}
+	if buildCommit == "" {
+		buildCommit = "N/A"
+	}
+	fmt.Println("Build version: ", buildVersion)
+	fmt.Println("Build date: ", buildDate)
+	fmt.Println("Build commit: ", buildCommit)
 }

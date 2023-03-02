@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -15,6 +16,10 @@ import (
 	"github.com/iddanilov/metricsAndAlerting/internal/server"
 )
 
+var buildVersion string
+var buildDate string
+var buildCommit string
+
 // @title Metric and Alerting
 // @version 0.0.2
 // @description API Server for Metric and Alerting Application
@@ -23,6 +28,9 @@ import (
 // @BasePath /
 
 func main() {
+
+	StartServer()
+
 	var useDB bool
 	var err error
 	storage := &db.DB{}
@@ -80,4 +88,19 @@ func main() {
 	pprof.RouteRegister(&r.RouterGroup, "pprof")
 
 	r.Run(cfg.Address)
+}
+
+func StartServer() {
+	if buildVersion == "" {
+		buildVersion = "N/A"
+	}
+	if buildDate == "N/A" {
+		buildDate = "N/A"
+	}
+	if buildCommit == "" {
+		buildCommit = ""
+	}
+	fmt.Println("Build version: ", buildVersion)
+	fmt.Println("Build date: ", buildDate)
+	fmt.Println("Build commit: ", buildCommit)
 }
