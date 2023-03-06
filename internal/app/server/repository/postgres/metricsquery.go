@@ -1,4 +1,4 @@
-package db
+package postgresql
 
 const (
 	checkMetricDB = `
@@ -26,7 +26,7 @@ SELECT id, m_type, delta, value FROM metrics WHERE $1 = id
 SELECT value FROM metrics WHERE id = $1
 `
 
-	queryUpdateMetrics = `
+	queryUpdateMetric = `
 INSERT INTO metrics(id,
 	m_type,
 	delta,
@@ -37,5 +37,10 @@ update set
 	m_type=excluded.m_type,
 	delta=metrics.delta+excluded.delta,
 	value=excluded.value
+`
+	queryDeleteMetrics = `
+DELETE 
+FROM metrics
+WHERE id=$1
 `
 )

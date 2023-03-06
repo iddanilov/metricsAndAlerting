@@ -1,7 +1,6 @@
-package db
+package postgresql
 
 import (
-	"context"
 	"database/sql"
 	"log"
 
@@ -12,7 +11,7 @@ import (
 
 type DB struct {
 	DB     *sql.DB
-	buffer []models.Metrics
+	Buffer []models.Metrics
 }
 
 func NewDB(DNS string) (*DB, error) {
@@ -24,11 +23,6 @@ func NewDB(DNS string) (*DB, error) {
 
 	return &DB{
 		DB:     db,
-		buffer: make([]models.Metrics, 0, 1000),
+		Buffer: make([]models.Metrics, 0, 1000),
 	}, nil
-}
-
-func (db *DB) DBPing(ctx context.Context) error {
-	return db.DB.PingContext(ctx)
-
 }

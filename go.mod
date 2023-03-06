@@ -6,9 +6,9 @@ require (
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/gin-contrib/pprof v1.4.0
 	github.com/gin-gonic/gin v1.9.0
-	github.com/golang/mock v1.6.0
 	github.com/lib/pq v1.10.7
 	github.com/shirou/gopsutil/v3 v3.23.1
+	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.2
 	github.com/swaggo/files v1.0.0
