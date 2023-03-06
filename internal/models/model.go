@@ -19,7 +19,7 @@ type Metrics struct {
 	Hash  string   `json:"hash,omitempty"`             // значение хеш-функции
 }
 
-func (m Metrics) MetricISEmpty() bool {
+func (m *Metrics) MetricISEmpty() bool {
 	return m.ID == ""
 }
 
