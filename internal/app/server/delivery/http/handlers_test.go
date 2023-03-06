@@ -3,23 +3,23 @@ package http
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	serverApp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
-	serverapp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
-	serverRepository "github.com/iddanilov/metricsAndAlerting/internal/app/server/repository/postgres"
-	"github.com/iddanilov/metricsAndAlerting/internal/app/server/repository/storage"
-	serverUseCase "github.com/iddanilov/metricsAndAlerting/internal/app/server/usecase"
-	"github.com/iddanilov/metricsAndAlerting/internal/models"
-	"github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
-	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/postgresql"
-	db "github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/postgresql"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
+
+	serverApp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
+	serverRepository "github.com/iddanilov/metricsAndAlerting/internal/app/server/repository/postgres"
+	"github.com/iddanilov/metricsAndAlerting/internal/app/server/repository/storage"
+	serverUseCase "github.com/iddanilov/metricsAndAlerting/internal/app/server/usecase"
+	"github.com/iddanilov/metricsAndAlerting/internal/models"
+	"github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
+	"github.com/iddanilov/metricsAndAlerting/internal/pkg/repository/postgresql"
 )
 
 var (
@@ -42,7 +42,7 @@ func InitTestHandlers(repo bool) *testHandlers {
 	}
 	storage := storage.NewStorages(cfg, logger)
 
-	db, err := db.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
+	db, err := postgresql.NewDB("host=localhost user=admin password=password dbname=postgres port=6432 sslmode=disable")
 	if err != nil {
 		panic(err)
 	}
@@ -67,8 +67,8 @@ type testHandlers struct {
 	logger     logger.Logger
 	us         serverApp.Usecase
 	db         *postgresql.DB
-	storage    serverapp.Storage
-	repository serverapp.Repository
+	storage    serverApp.Storage
+	repository serverApp.Repository
 }
 
 func TestSaveGaugeInRepository(t *testing.T) {
@@ -943,12 +943,13 @@ func TestGetCreateResponse(t *testing.T) {
 			for _, metrics := range tt.metricResult {
 				err := handlers.repository.UpdateMetric(context.Background(), metrics)
 				assert.NoError(t, err)
-
-				defer func() {
-					err = handlers.repository.DeleteMetrics(context.Background(), []string{metrics.ID})
-					assert.NoError(t, err)
-				}()
 			}
+			defer func() {
+				for _, metrics := range tt.metricResult {
+					err := handlers.repository.DeleteMetrics(context.Background(), []string{metrics.ID})
+					assert.NoError(t, err)
+				}
+			}()
 
 			time.Sleep(time.Second * 1)
 

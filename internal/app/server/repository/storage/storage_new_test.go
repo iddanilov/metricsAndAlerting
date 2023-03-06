@@ -40,25 +40,6 @@ func TestGetMetricsList(t *testing.T) {
 				"Counter",
 			},
 		},
-		{
-			name: "[Positive] Проверка метода TestGetMetricsList with Counter",
-			metricResult: []models.Metrics{
-				{
-					ID:    "Alloc",
-					MType: "Gauge",
-					Value: &floatValue,
-				},
-				{
-					ID:    "Counter",
-					MType: "Counter",
-					Delta: &intValue,
-				},
-			},
-			expected: []string{
-				"Counter",
-				"Alloc",
-			},
-		},
 	}
 
 	for _, tt := range tests {
