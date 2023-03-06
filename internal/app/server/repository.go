@@ -11,6 +11,7 @@ import (
 type Repository interface {
 	Ping() error
 	UpdateMetric(ctx context.Context, metrics models.Metrics) error
+	DeleteMetrics(ctx context.Context, metrics []string) error
 	UpdateMetrics(metrics []models.Metrics) error
 	GetMetric(ctx context.Context, metricID string) (models.Metrics, error)
 	GetMetricNames(ctx context.Context) ([]string, error)

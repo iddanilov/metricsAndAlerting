@@ -24,7 +24,7 @@ func (rg *RouterGroup) Routes() {
 	group := rg.rg.Group("/")
 	group.Use()
 	{
-		group.GET("/", middleware.Middleware(h.MetricList))
+		group.GET("/", middleware.Middleware(h.uc.MetricList))
 		group.POST("/update/:type/:name/:value", middleware.Middleware(h.uc.UpdateMetricByPath))
 		group.POST("/update/", middleware.Middleware(h.uc.UpdateMetric))
 		group.POST("/updates/", middleware.Middleware(h.uc.UpdateMetrics))

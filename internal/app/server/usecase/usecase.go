@@ -6,15 +6,16 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
 	"github.com/gin-gonic/gin"
+
 	serverApp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
 	client "github.com/iddanilov/metricsAndAlerting/internal/models"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/middleware"
-	"log"
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 type Config struct {
@@ -45,7 +46,7 @@ func NewServerUseCase(
 
 // Ping - check db working.
 func (u *serverUseCase) Ping(c *gin.Context) ([]byte, error) {
-	log.Println("Ping")
+	u.logger.Info("Ping")
 	if err := u.repository.Ping(); err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 		return nil, err
@@ -64,7 +65,7 @@ func (u *serverUseCase) GetMetric(c *gin.Context) ([]byte, error) {
 	responseBody := client.Metrics{}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		log.Println(err)
+		u.logger.Error(err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return nil, err
 	}
@@ -93,7 +94,7 @@ func (u *serverUseCase) GetMetric(c *gin.Context) ([]byte, error) {
 			hashValue, err = hashCreate(fmt.Sprintf("%s:counter:%d", responseBody.ID, *responseBody.Delta), []byte(u.key))
 		}
 		if err != nil {
-			log.Println(err)
+			u.logger.Error(err)
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return nil, err
 		}
@@ -110,7 +111,7 @@ func (u *serverUseCase) GetMetric(c *gin.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Get Metrics", string(body))
+	u.logger.Info("Get Metrics", string(body))
 
 	return body, err
 
@@ -120,8 +121,9 @@ func (u *serverUseCase) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	var err error
-	log.Println("Get Metrics", r.URL)
-	log.Println("Metrics Body: ", r.Body)
+	u.logger.Info("Get Metrics", r.URL)
+	u.logger.Info("Metrics Body: ", r.Body)
+
 	mType := c.Params.ByName("type")
 	name := c.Params.ByName("name")
 	if mType == "" || name == "" {
@@ -135,7 +137,7 @@ func (u *serverUseCase) GetMetricByPath(c *gin.Context) ([]byte, error) {
 		if u.useDB {
 			result, err = u.repository.GetGaugeMetric(c, name)
 			if err != nil {
-				log.Println(err)
+				u.logger.Error(err)
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
@@ -154,7 +156,7 @@ func (u *serverUseCase) GetMetricByPath(c *gin.Context) ([]byte, error) {
 		if u.useDB {
 			result, err = u.repository.GetCounterMetric(c, name)
 			if err != nil {
-				log.Println(err)
+				u.logger.Error(err)
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
@@ -197,7 +199,7 @@ func (u *serverUseCase) MetricList(c *gin.Context) ([]byte, error) {
 func (u *serverUseCase) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
-	log.Println("UpdateMetricByPath Metrics", r.URL)
+	u.logger.Info("UpdateMetricByPath Metrics", r.URL)
 	mType := c.Params.ByName("type")
 	name := c.Params.ByName("name")
 	mValue := c.Params.ByName("value")
@@ -227,7 +229,7 @@ func (u *serverUseCase) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 			})
 		}
 		if err != nil {
-			log.Println(err)
+			u.logger.Error(err)
 		}
 	} else if strings.ToLower(mType) == "counter" {
 		v, err := strconv.ParseInt(mValue, 10, 64)
@@ -251,7 +253,7 @@ func (u *serverUseCase) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 			})
 		}
 		if err != nil {
-			log.Println(err)
+			u.logger.Error(err)
 		}
 	} else {
 		return nil, middleware.UnknownMetricName
@@ -260,7 +262,7 @@ func (u *serverUseCase) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte{})
 	if err != nil {
-		log.Println("Write err: ", err.Error())
+		u.logger.Error("Write err: ", err.Error())
 		return nil, err
 	}
 
@@ -271,7 +273,7 @@ func (u *serverUseCase) UpdateMetric(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	requestBody := client.Metrics{}
-	log.Println("UpdateMetric Metrics", r.URL)
+	u.logger.Info("UpdateMetric Metrics", r.URL)
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -302,7 +304,7 @@ func (u *serverUseCase) UpdateMetric(c *gin.Context) ([]byte, error) {
 				Value: requestBody.Value,
 			})
 			if err != nil {
-				log.Println(err)
+				u.logger.Error(err)
 			}
 		} else {
 			u.storage.SaveGaugeMetric(&client.Metrics{
@@ -337,7 +339,7 @@ func (u *serverUseCase) UpdateMetric(c *gin.Context) ([]byte, error) {
 				Value: nil,
 			})
 			if err != nil {
-				log.Println(err)
+				u.logger.Error(err)
 			}
 		} else {
 			u.storage.SaveCountMetric(client.Metrics{
@@ -358,8 +360,8 @@ func (u *serverUseCase) UpdateMetric(c *gin.Context) ([]byte, error) {
 func (u *serverUseCase) UpdateMetrics(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
-	log.Println("UpdateMetric Metrics", r.URL)
-	log.Println("Metrics Body: ", r.Body)
+	u.logger.Info("UpdateMetric Metrics", r.URL)
+	u.logger.Info("Metrics Body: ", r.Body)
 
 	var requestBody []client.Metrics
 

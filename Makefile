@@ -38,5 +38,5 @@ gen-mock:
 .PHONY: test-coverage
 test-coverage:
 	@echo "Run test with coverage"
-	@go test -p 1  ./internal/... ./cmd/... ./pkg/... -cover -count=1 -coverprofile cover_full.out
+	@go test -p 1  ./internal/... ./cmd/... -cover -count=1 -coverprofile cover_full.out
 	@go tool cover -func cover_full.out | grep "^total" | awk '{print $3}'

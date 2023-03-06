@@ -3,7 +3,6 @@ package postgresql
 import (
 	"context"
 	"errors"
-
 	server "github.com/iddanilov/metricsAndAlerting/internal/app/server"
 	"github.com/iddanilov/metricsAndAlerting/internal/models"
 	"github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
@@ -34,12 +33,71 @@ func (r *serverRepository) Ping() error {
 	return r.db.DB.Ping()
 }
 
-func (r *serverRepository) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
-	_, err := r.db.DB.ExecContext(ctx, queryUpdateMetrics, metrics.ID, metrics.MType, metrics.Delta, metrics.Value)
-	if err != nil {
-		r.logger.Error("Can't Update Metric")
+func (r *serverRepository) DeleteMetrics(ctx context.Context, metricIDs []string) error {
+	if r.db.DB == nil {
+		return errors.New("you haven`t opened the database connection")
 	}
-	return err
+	tx, err := r.db.DB.Begin()
+	if err != nil {
+		r.logger.Error("can't create tx", err)
+		return err
+	}
+
+	stmt, err := tx.Prepare(queryDeleteMetrics)
+	if err != nil {
+		r.logger.Error("can't create stmt", err)
+		return err
+	}
+	for _, metricID := range metricIDs {
+		if _, err = stmt.Exec(metricID); err != nil {
+			r.logger.Error("can't make Exec", err)
+			if err = tx.Rollback(); err != nil {
+				r.logger.Fatalf("update drivers: unable to rollback: %v", err)
+			}
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		r.logger.Fatalf("update drivers: unable to commit: %v", err)
+		return err
+	}
+
+	r.db.Buffer = r.db.Buffer[:0]
+	return nil
+}
+
+func (r *serverRepository) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
+	if r.db.DB == nil {
+		return errors.New("you haven`t opened the database connection")
+	}
+	tx, err := r.db.DB.Begin()
+	if err != nil {
+		r.logger.Error("can't create tx", err)
+		return err
+	}
+
+	stmt, err := tx.Prepare(queryUpdateMetric)
+	if err != nil {
+		r.logger.Error("can't create stmt", err)
+		return err
+	}
+
+	if _, err = stmt.Exec(metrics.ID, metrics.MType, metrics.Delta, metrics.Value); err != nil {
+		r.logger.Error("can't make Exec", err)
+		if err = tx.Rollback(); err != nil {
+			r.logger.Fatalf("update drivers: unable to rollback: %v", err)
+		}
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		r.logger.Fatalf("update drivers: unable to commit: %v", err)
+		return err
+	}
+
+	r.db.Buffer = r.db.Buffer[:0]
+	return nil
 }
 
 func (r *serverRepository) UpdateMetrics(metrics []models.Metrics) error {
@@ -52,7 +110,7 @@ func (r *serverRepository) UpdateMetrics(metrics []models.Metrics) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare(queryUpdateMetrics)
+	stmt, err := tx.Prepare(queryUpdateMetric)
 	if err != nil {
 		r.logger.Error("can't create stmt", err)
 		return err
@@ -131,6 +189,9 @@ func (r *serverRepository) GetGaugeMetric(ctx context.Context, metricID string) 
 	err := row.Scan(&result)
 	if err != nil {
 		r.logger.Error(err)
+		if err.Error() == "sql: no rows in result set" {
+			return nil, errors.New("metrics not found")
+		}
 		return nil, err
 	}
 	return &result, nil
