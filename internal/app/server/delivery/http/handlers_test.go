@@ -196,7 +196,7 @@ func TestSaveGaugeInRepository(t *testing.T) {
 				tt.want.code,
 				fmt.Sprintf("Expected status code %d, got %d", tt.want.code, w.Code),
 			)
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Millisecond * 100)
 
 			metricValue, err := initHandlers.repository.GetGaugeMetric(context.Background(), tt.want.metricResult.ID)
 
@@ -475,7 +475,7 @@ func TestSaveCounterInRepository(t *testing.T) {
 			if res.StatusCode != tt.want.code {
 				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
 			}
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Millisecond * 100)
 
 			metricDelta, err := handlers.repository.GetCounterMetric(context.Background(), tt.want.metricResult.ID)
 
@@ -615,7 +615,7 @@ func TestSaveCounterInStorage(t *testing.T) {
 			if res.StatusCode != tt.want.code {
 				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
 			}
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Millisecond * 100)
 
 			metricDelta, err := handlers.storage.GetMetricDelta(tt.want.metricResult.ID)
 
@@ -686,7 +686,7 @@ func TestGetMetric(t *testing.T) {
 				assert.NoError(t, err)
 			}()
 
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Millisecond * 100)
 
 			request := httptest.NewRequest(http.MethodGet, tt.url, nil)
 			request.Header.Set("Content-Type", "text/plain")
@@ -771,7 +771,7 @@ func TestGetGauge(t *testing.T) {
 				assert.NoError(t, err)
 			}()
 
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Millisecond * 100)
 
 			request := httptest.NewRequest(http.MethodGet, tt.url, nil)
 			request.Header.Set("Content-Type", "text/plain")
@@ -869,7 +869,7 @@ func TestGetMetrics(t *testing.T) {
 				}()
 			}
 
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Millisecond * 100)
 
 			request := httptest.NewRequest(http.MethodGet, tt.url, nil)
 			request.Header.Set("Content-Type", "text/plain")
@@ -951,7 +951,7 @@ func TestGetCreateResponse(t *testing.T) {
 				}
 			}()
 
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Millisecond * 100)
 
 			request := httptest.NewRequest(http.MethodGet, tt.url, nil)
 			request.Header.Set("Content-Type", "text/plain")
