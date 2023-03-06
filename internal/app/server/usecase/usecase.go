@@ -1,66 +1,53 @@
-// Package server is a server handler and storage.
-package server
+package usecase
 
 import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/iddanilov/metricsAndAlerting/internal/db"
-	"github.com/iddanilov/metricsAndAlerting/internal/middleware"
+	"github.com/gin-gonic/gin"
+
+	serverApp "github.com/iddanilov/metricsAndAlerting/internal/app/server"
 	client "github.com/iddanilov/metricsAndAlerting/internal/models"
+	"github.com/iddanilov/metricsAndAlerting/internal/pkg/logger"
+	"github.com/iddanilov/metricsAndAlerting/internal/pkg/middleware"
 )
 
-type RouterGroup struct {
-	rg    *gin.RouterGroup
-	s     *Storage
-	key   string
-	db    *db.DB
-	useDB bool
+type Config struct {
 }
 
-// NewRouterGroup - create new gin route group
-func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *db.DB, useDB bool) *RouterGroup {
-	return &RouterGroup{
-		rg:    rg,
-		s:     s,
-		key:   key,
-		db:    db,
-		useDB: useDB,
+type serverUseCase struct {
+	repository serverApp.Repository
+	storage    serverApp.Storage
+	logger     logger.Logger
+	useDB      bool
+	key        string
+}
+
+func NewServerUseCase(
+	serverRepo serverApp.Repository,
+	storage serverApp.Storage,
+	logger logger.Logger,
+	useDB bool,
+	key string) serverApp.Usecase {
+	return &serverUseCase{
+		repository: serverRepo,
+		logger:     logger,
+		useDB:      useDB,
+		storage:    storage,
+		key:        key,
 	}
 }
 
-func (h *RouterGroup) Routes() {
-	group := h.rg.Group("/")
-	group.Use()
-	{
-		group.GET("/", middleware.Middleware(h.MetricList))
-		group.POST("/update/:type/:name/:value", middleware.Middleware(h.UpdateMetricByPath))
-		group.POST("/update/", middleware.Middleware(h.UpdateMetric))
-		group.POST("/updates/", middleware.Middleware(h.UpdateMetrics))
-		group.POST("/value/", middleware.Middleware(h.GetMetric))
-		group.GET("/value/:type/:name", middleware.Middleware(h.GetMetricByPath))
-		group.GET("/ping", middleware.Middleware(h.Ping))
-	}
-}
-
-// Ping - GET request for checking db working.
-func (h *RouterGroup) Ping(c *gin.Context) ([]byte, error) {
-	log.Println("Ping")
-	if h.db.DB == nil {
-		err := errors.New("can't connect to db")
-		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
-		return nil, err
-	}
-	if err := h.db.DBPing(c); err != nil {
+// Ping - check db working.
+func (u *serverUseCase) Ping(c *gin.Context) ([]byte, error) {
+	u.logger.Info("Ping")
+	if err := u.repository.Ping(); err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 		return nil, err
 	}
@@ -68,8 +55,7 @@ func (h *RouterGroup) Ping(c *gin.Context) ([]byte, error) {
 	return nil, nil
 }
 
-// GetMetric - GET request for get metric by body value
-func (h *RouterGroup) GetMetric(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) GetMetric(c *gin.Context) ([]byte, error) {
 	var hashValue string
 	var err error
 	r := c.Request
@@ -79,7 +65,7 @@ func (h *RouterGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	responseBody := client.Metrics{}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		log.Println(err)
+		u.logger.Error(err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return nil, err
 	}
@@ -87,28 +73,28 @@ func (h *RouterGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	if requestBody.ID == "" {
 		return nil, middleware.ErrNotFound
 	}
-	if h.useDB {
-		responseBody, err = h.db.GetMetric(c, requestBody.ID)
+	if u.useDB {
+		responseBody, err = u.repository.GetMetric(c, requestBody.ID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return nil, err
 		}
 	} else {
-		response, ok := h.s.Metrics[requestBody.ID]
-		if !ok {
-			return nil, middleware.ErrNotFound
+		responseBody, err = u.storage.GetMetric(requestBody)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return nil, err
 		}
-		response.MType = strings.ToLower(response.MType)
-		responseBody = response
+
 	}
-	if h.key != "" {
+	if u.key != "" {
 		if strings.ToLower(requestBody.MType) == "gauge" {
-			hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", responseBody.ID, *responseBody.Value), []byte(h.key))
+			hashValue, err = hashCreate(fmt.Sprintf("%s:gauge:%f", responseBody.ID, *responseBody.Value), []byte(u.key))
 		} else {
-			hashValue, err = hashCreate(fmt.Sprintf("%s:counter:%d", responseBody.ID, *responseBody.Delta), []byte(h.key))
+			hashValue, err = hashCreate(fmt.Sprintf("%s:counter:%d", responseBody.ID, *responseBody.Delta), []byte(u.key))
 		}
 		if err != nil {
-			log.Println(err)
+			u.logger.Error(err)
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return nil, err
 		}
@@ -125,19 +111,19 @@ func (h *RouterGroup) GetMetric(c *gin.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("Get Metrics", string(body))
+	u.logger.Info("Get Metrics", string(body))
 
 	return body, err
 
 }
 
-// GetMetricByPath - GET request for get metric by url value
-func (h *RouterGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	var err error
-	log.Println("Get Metrics", r.URL)
-	log.Println("Metrics Body: ", r.Body)
+	u.logger.Info("Get Metrics", r.URL)
+	u.logger.Info("Metrics Body: ", r.Body)
+
 	mType := c.Params.ByName("type")
 	name := c.Params.ByName("name")
 	if mType == "" || name == "" {
@@ -148,48 +134,38 @@ func (h *RouterGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	var response []byte
 	if strings.ToLower(mType) == "gauge" {
 		var result *float64
-		if h.useDB {
-			result, err = h.db.GetGaugeMetric(c, name)
+		if u.useDB {
+			result, err = u.repository.GetGaugeMetric(c, name)
 			if err != nil {
-				log.Println(err)
+				u.logger.Error(err)
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
 		} else {
-			metric, ok := h.s.Metrics[name]
-			if !ok {
+			result, err = u.storage.GetMetricValue(name)
+			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
-			if metric.Value == nil {
-				w.WriteHeader(http.StatusNotFound)
-				return nil, middleware.ErrNotFound
-			}
-			result = metric.Value
 		}
 
 		response = []byte(fmt.Sprintf("%v", *result))
 		w.WriteHeader(http.StatusOK)
 	} else if strings.ToLower(mType) == "counter" {
 		var result *int64
-		if h.useDB {
-			result, err = h.db.GetCounterMetric(c, name)
+		if u.useDB {
+			result, err = u.repository.GetCounterMetric(c, name)
 			if err != nil {
-				log.Println(err)
+				u.logger.Error(err)
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
 		} else {
-			metric, ok := h.s.Metrics[name]
-			if !ok {
+			result, err = u.storage.GetMetricDelta(name)
+			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return nil, middleware.ErrNotFound
 			}
-			if metric.Delta == nil {
-				w.WriteHeader(http.StatusNotFound)
-				return nil, middleware.ErrNotFound
-			}
-			result = metric.Delta
 		}
 
 		response = []byte(fmt.Sprintf("%v", *result))
@@ -202,30 +178,28 @@ func (h *RouterGroup) GetMetricByPath(c *gin.Context) ([]byte, error) {
 	return response, nil
 }
 
-// MetricList - GET request for get all metrics
-func (h *RouterGroup) MetricList(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) MetricList(c *gin.Context) ([]byte, error) {
 	c.Writer.Header().Set("Content-Type", "text/html")
 	var values []string
 	var err error
-	if h.useDB {
-		values, err = h.db.GetMetricNames(c)
+	if u.useDB {
+		values, err = u.repository.GetMetricNames(c)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		for _, m := range h.s.Metrics {
-			values = append(values, m.ID)
+		values, err = u.storage.GetMetricsList()
+		if err != nil {
+			return nil, err
 		}
-
 	}
 	return []byte(createResponse(values)), nil
 }
 
-// UpdateMetricByPath - GET request for update metric by url value
-func (h *RouterGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
-	log.Println("UpdateMetricByPath Metrics", r.URL)
+	u.logger.Info("UpdateMetricByPath Metrics", r.URL)
 	mType := c.Params.ByName("type")
 	name := c.Params.ByName("name")
 	mValue := c.Params.ByName("value")
@@ -240,22 +214,22 @@ func (h *RouterGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 			w.WriteHeader(http.StatusBadRequest)
 			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type float64: value%s", mType))
 		}
-		if h.useDB {
-			err = h.db.UpdateMetric(c, client.Metrics{
+		if u.useDB {
+			err = u.repository.UpdateMetric(c, client.Metrics{
 				ID:    name,
 				MType: mType,
 				Delta: nil,
 				Value: &v,
 			})
 		} else {
-			h.s.SaveGaugeMetric(&client.Metrics{
+			u.storage.SaveGaugeMetric(&client.Metrics{
 				ID:    name,
 				MType: mType,
 				Value: &v,
 			})
 		}
 		if err != nil {
-			log.Println(err)
+			u.logger.Error(err)
 		}
 	} else if strings.ToLower(mType) == "counter" {
 		v, err := strconv.ParseInt(mValue, 10, 64)
@@ -264,22 +238,22 @@ func (h *RouterGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 			return nil, middleware.NewAppError(nil, fmt.Sprintf("Value should be type int64: value%s", mValue))
 		}
 
-		if h.useDB {
-			err = h.db.UpdateMetric(c, client.Metrics{
+		if u.useDB {
+			err = u.repository.UpdateMetric(c, client.Metrics{
 				ID:    name,
 				MType: mType,
 				Delta: &v,
 				Value: nil,
 			})
 		} else {
-			h.s.SaveCountMetric(client.Metrics{
+			u.storage.SaveCountMetric(client.Metrics{
 				ID:    name,
 				MType: mType,
 				Delta: &v,
 			})
 		}
 		if err != nil {
-			log.Println(err)
+			u.logger.Error(err)
 		}
 	} else {
 		return nil, middleware.UnknownMetricName
@@ -288,19 +262,18 @@ func (h *RouterGroup) UpdateMetricByPath(c *gin.Context) ([]byte, error) {
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte{})
 	if err != nil {
-		log.Println("Write err: ", err.Error())
+		u.logger.Error("Write err: ", err.Error())
 		return nil, err
 	}
 
 	return nil, nil
 }
 
-// UpdateMetric - POST request for update metric by body value
-func (h *RouterGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) UpdateMetric(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
 	requestBody := client.Metrics{}
-	log.Println("UpdateMetric Metrics", r.URL)
+	u.logger.Info("UpdateMetric Metrics", r.URL)
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -312,8 +285,8 @@ func (h *RouterGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
 		}
-		if h.key != "" && requestBody.Hash != "" {
-			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(h.key))
+		if u.key != "" && requestBody.Hash != "" {
+			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:gauge:%f", requestBody.ID, *requestBody.Value), []byte(u.key))
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return nil, err
@@ -323,18 +296,18 @@ func (h *RouterGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 				return nil, err
 			}
 		}
-		if h.useDB {
-			err := h.db.UpdateMetric(c, client.Metrics{
+		if u.useDB {
+			err := u.repository.UpdateMetric(c, client.Metrics{
 				ID:    requestBody.ID,
 				MType: strings.ToLower(requestBody.MType),
 				Delta: nil,
 				Value: requestBody.Value,
 			})
 			if err != nil {
-				log.Println(err)
+				u.logger.Error(err)
 			}
 		} else {
-			h.s.SaveGaugeMetric(&client.Metrics{
+			u.storage.SaveGaugeMetric(&client.Metrics{
 				ID:    requestBody.ID,
 				MType: strings.ToLower(requestBody.MType),
 				Value: requestBody.Value,
@@ -346,8 +319,8 @@ func (h *RouterGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			w.WriteHeader(http.StatusNotFound)
 			return nil, middleware.ErrNotFound
 		}
-		if h.key != "" && requestBody.Hash != "" {
-			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:counter:%d", requestBody.ID, *requestBody.Delta), []byte(h.key))
+		if u.key != "" && requestBody.Hash != "" {
+			ok, err := hash(requestBody.Hash, fmt.Sprintf("%s:counter:%d", requestBody.ID, *requestBody.Delta), []byte(u.key))
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return nil, err
@@ -358,18 +331,18 @@ func (h *RouterGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 			}
 		}
 
-		if h.useDB {
-			err := h.db.UpdateMetric(c, client.Metrics{
+		if u.useDB {
+			err := u.repository.UpdateMetric(c, client.Metrics{
 				ID:    requestBody.ID,
 				MType: strings.ToLower(requestBody.MType),
 				Delta: requestBody.Delta,
 				Value: nil,
 			})
 			if err != nil {
-				log.Println(err)
+				u.logger.Error(err)
 			}
 		} else {
-			h.s.SaveCountMetric(client.Metrics{
+			u.storage.SaveCountMetric(client.Metrics{
 				ID:    requestBody.ID,
 				MType: strings.ToLower(requestBody.MType),
 				Delta: requestBody.Delta,
@@ -384,12 +357,11 @@ func (h *RouterGroup) UpdateMetric(c *gin.Context) ([]byte, error) {
 	return nil, nil
 }
 
-// UpdateMetrics - POST request for update all metrics in body by body value
-func (h *RouterGroup) UpdateMetrics(c *gin.Context) ([]byte, error) {
+func (u *serverUseCase) UpdateMetrics(c *gin.Context) ([]byte, error) {
 	r := c.Request
 	w := c.Writer
-	log.Println("UpdateMetric Metrics", r.URL)
-	log.Println("Metrics Body: ", r.Body)
+	u.logger.Info("UpdateMetric Metrics", r.URL)
+	u.logger.Info("Metrics Body: ", r.Body)
 
 	var requestBody []client.Metrics
 
@@ -397,8 +369,8 @@ func (h *RouterGroup) UpdateMetrics(c *gin.Context) ([]byte, error) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, err
 	}
-	if h.useDB {
-		err := h.db.UpdateMetrics(requestBody)
+	if u.useDB {
+		err := u.repository.UpdateMetrics(requestBody)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
@@ -433,8 +405,8 @@ func hash(bodyHash string, m string, key []byte) (bool, error) {
 func createResponse(metrics []string) string {
 	baseHTML := `<h1><ul>`
 	finish := "</ul></h1>"
-	for _, gmetric := range metrics {
-		baseHTML = baseHTML + fmt.Sprintf("<li>%s</li>", gmetric)
+	for _, metric := range metrics {
+		baseHTML = baseHTML + fmt.Sprintf("<li>%s</li>", metric)
 	}
 	baseHTML = baseHTML + finish
 

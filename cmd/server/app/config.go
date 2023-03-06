@@ -1,4 +1,4 @@
-package server
+package app
 
 import (
 	goflag "flag"
@@ -8,6 +8,8 @@ import (
 
 	"github.com/caarlos0/env/v6"
 	flag "github.com/spf13/pflag"
+
+	"github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
 var (
@@ -17,19 +19,11 @@ var (
 	Restore       = flag.BoolP("r", "r", true, "help message for Restore")
 	Key           = flag.StringP("k", "k", "", "help message for KEY")
 	DSN           = flag.StringP("d", "d", "", "help message for DSN")
+	LoggerLevel   = flag.StringP("l", "l", "debug", "LoggerLevel")
 )
 
-type Config struct {
-	Address       string        `env:"ADDRESS"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL"`
-	StoreFile     string        `env:"STORE_FILE"`
-	Restore       bool          `env:"RESTORE"`
-	Key           string        `env:"KEY"`
-	DSN           string        `env:"DATABASE_DSN"`
-}
-
-func NewConfig() *Config {
-	var cfg Config
+func NewConfig() *models.Server {
+	var cfg models.Server
 
 	err := env.Parse(&cfg)
 	if err != nil {
@@ -41,17 +35,20 @@ func NewConfig() *Config {
 	if cfg.Address == "" {
 		cfg.Address = *Address
 	}
-	if cfg.StoreInterval == 0 {
+	if cfg.LoggerLevel == "" {
+		cfg.LoggerLevel = *LoggerLevel
+	}
+	if cfg.Storage.StoreInterval == 0 {
 		cfg.StoreInterval = *StoreInterval
 	}
-	if cfg.StoreFile == "" {
+	if cfg.Storage.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
 	}
 	if *Key != "" {
-		cfg.Key = *Key
+		cfg.Storage.Key = *Key
 	}
 	if cfg.DSN == "" {
-		cfg.DSN = *DSN
+		cfg.Postgres.DSN = *DSN
 	}
 	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore
