@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	goflag "flag"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -23,13 +25,17 @@ var (
 	PollInterval   = flag.DurationP("p", "p", 2*time.Second, "help message for flagname")
 	ReportInterval = flag.DurationP("r", "r", 10*time.Second, "help message for flagname")
 	Key            = flag.StringP("k", "k", "", "help message for KEY")
+	CryptoKey      = flag.StringP("certs-key", "", "", "help message for DSN")
+	JsonConfig     = flag.StringP("config", "c", "", "help message for DSN")
 )
 
 type Config struct {
-	Address        string        `env:"ADDRESS"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
-	PollInterval   time.Duration `env:"POLL_INTERVAL"`
+	Address        string        `env:"ADDRESS" json:"address"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL" json:"report_interval"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL" json:"poll_interval"`
 	Key            string        `env:"KEY"`
+	CryptoKey      string        `env:"CRYPTO_KEY" json:"crypto_key"`
+	JsonConfig     string        `env:"CONFIG"`
 }
 
 type Client struct {
@@ -45,6 +51,9 @@ func NewClient() *Client {
 	if cfg.Address == "" {
 		cfg.Address = *Address
 	}
+	if cfg.CryptoKey == "" {
+		cfg.CryptoKey = *CryptoKey
+	}
 	if !strings.Contains(cfg.Address, "http") {
 		cfg.Address = "http://" + cfg.Address
 	}
@@ -56,6 +65,13 @@ func NewClient() *Client {
 	}
 	if *Key != "" {
 		cfg.Key = *Key
+	}
+	if *JsonConfig != "" || cfg.JsonConfig != "" {
+		if cfg.JsonConfig != "" {
+			readFromJson(cfg.JsonConfig, &cfg)
+		} else {
+			readFromJson(*JsonConfig, &cfg)
+		}
 	}
 
 	if err != nil {
@@ -115,4 +131,28 @@ func (c *Client) sendRequest(req *http.Request) error {
 
 	return nil
 
+}
+
+func readFromJson(path string, cfg *Config) error {
+
+	var temp []byte
+
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	_, err = f.Read(temp) // filename is the JSON file to read
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(temp, cfg)
+	if err != nil {
+		log.Println("Cannot unmarshal the json ", err)
+		return err
+	}
+
+	return nil
 }

@@ -3,8 +3,13 @@ package main
 
 import (
 	"context"
+	"crypto/rsa"
 	"fmt"
+	"github.com/iddanilov/metricsAndAlerting/pkg/certs"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gin-contrib/pprof"
@@ -28,7 +33,6 @@ var buildCommit string
 // @BasePath /
 
 func main() {
-
 	StartServer()
 
 	var useDB bool
@@ -36,7 +40,7 @@ func main() {
 	storage := &db.DB{}
 	log.Println("create router")
 
-	ctx := context.Background()
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
@@ -61,11 +65,17 @@ func main() {
 
 	go func(ctx context.Context) {
 		for {
-			<-reportIntervalTicker.C
-			log.Println("Write data in file")
-			err := file.SaveMetricInFile()
-			if err != nil {
-				log.Println(err)
+			select {
+			case <-ctx.Done():
+				log.Println("Stopped by user")
+				os.Exit(0)
+
+			case <-reportIntervalTicker.C:
+				log.Println("Write data in file")
+				err := file.SaveMetricInFile()
+				if err != nil {
+					log.Println(err)
+				}
 			}
 		}
 
@@ -85,9 +95,19 @@ func main() {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	rg.Routes()
+
 	pprof.RouteRegister(&r.RouterGroup, "pprof")
 
-	r.Run(cfg.Address)
+	var privateKey *rsa.PrivateKey
+
+	cert := certs.NewCrypto(privateKey)
+
+	if cfg.CryptoKey != "" {
+		r.RunTLS(cfg.Address, cert.Path, cfg.CryptoKey)
+	}
+
+	r.Run()
+
 }
 
 func StartServer() {

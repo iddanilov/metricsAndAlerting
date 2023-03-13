@@ -33,7 +33,7 @@ var buildDate string
 var buildCommit string
 
 func main() {
-	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	StartServer()
 
@@ -52,6 +52,7 @@ func main() {
 	pollIntervalTicker := time.NewTicker(respClient.Config.PollInterval)
 	go func() {
 		for {
+
 			select {
 			case <-ctx.Done():
 				close(metricsChan)
