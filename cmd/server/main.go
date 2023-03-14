@@ -61,23 +61,10 @@ func main() {
 	log.Println(useDB)
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
+	if !useDB {
+		writeDBScheduler(ctx, reportIntervalTicker, file)
+	}
 
-	go func(ctx context.Context) {
-		for {
-			select {
-			case <-ctx.Done():
-				log.Println("Stopped by user")
-				os.Exit(0)
-			case <-reportIntervalTicker.C:
-				log.Println("Write data in file")
-				err := file.SaveMetricInFile()
-				if err != nil {
-					log.Println(err)
-				}
-			}
-		}
-
-	}(ctx)
 	r := gin.New()
 
 	ginSwagger.WrapHandler(swaggerfiles.Handler,
@@ -120,4 +107,22 @@ func StartServer() {
 	fmt.Println("Build version: ", buildVersion)
 	fmt.Println("Build date: ", buildDate)
 	fmt.Println("Build commit: ", buildCommit)
+}
+
+func writeDBScheduler(ctx context.Context, reportIntervalTicker *time.Ticker, file *server.Storage) {
+	go func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				log.Println("Stopped by user")
+				os.Exit(0)
+			case <-reportIntervalTicker.C:
+				log.Println("Write data in file")
+				err := file.SaveMetricInFile()
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}
+	}(ctx)
 }
