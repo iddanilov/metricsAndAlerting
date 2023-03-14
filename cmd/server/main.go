@@ -40,7 +40,7 @@ func main() {
 	storage := &db.DB{}
 	log.Println("create router")
 
-	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	cfg := server.NewConfig()
 	file := server.NewStorages(cfg)
