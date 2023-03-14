@@ -40,8 +40,7 @@ func main() {
 	storage := &db.DB{}
 	log.Println("create router")
 
-	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer cancel()
 
 	cfg := server.NewConfig()
@@ -69,7 +68,6 @@ func main() {
 			case <-ctx.Done():
 				log.Println("Stopped by user")
 				os.Exit(0)
-
 			case <-reportIntervalTicker.C:
 				log.Println("Write data in file")
 				err := file.SaveMetricInFile()

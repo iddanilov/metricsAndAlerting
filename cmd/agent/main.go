@@ -52,7 +52,6 @@ func main() {
 	pollIntervalTicker := time.NewTicker(respClient.Config.PollInterval)
 	go func() {
 		for {
-
 			select {
 			case <-ctx.Done():
 				close(metricsChan)
