@@ -40,8 +40,7 @@ func main() {
 	storage := &db.DB{}
 	log.Println("create router")
 
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	defer cancel()
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	cfg := server.NewConfig()
 	file := server.NewStorages(cfg)
