@@ -38,6 +38,9 @@ func (c crypto) CreatePrivateCert() {
 		log.Fatal(err)
 	}
 	_, err = f.Write(privateKeyPEM.Bytes())
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (c crypto) CreatePublicCert() *x509.Certificate {
