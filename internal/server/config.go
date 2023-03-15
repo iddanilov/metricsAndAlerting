@@ -62,21 +62,16 @@ func NewConfig() *Config {
 	flag.Parse()
 
 	if cfg.Address == "" {
-		log.Println("cfg.Address: ", cfg.Address)
-		log.Println("jsonConfig.Address: ", jsonConfig.Address)
-		if *Address != "" {
-			cfg.Address = *Address
-		} else {
+		cfg.Address = *Address
+		if cfg.Address != "" && jsonConfig.Address != "" {
 			cfg.Address = jsonConfig.Address
 		}
 	}
 	if cfg.StoreInterval == 0 {
-		if *StoreInterval != 0 {
-			cfg.StoreInterval = *StoreInterval
-		} else {
+		cfg.StoreInterval = *StoreInterval
+		if cfg.StoreInterval != 0 && jsonConfig.StoreInterval != 0 {
 			cfg.StoreInterval = jsonConfig.StoreInterval
 		}
-
 	}
 	if cfg.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
@@ -94,6 +89,8 @@ func NewConfig() *Config {
 		cfg.Restore = *Restore
 	}
 
+	log.Println(cfg.Address)
+	log.Println(cfg)
 	return &cfg
 
 }
