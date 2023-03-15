@@ -8,8 +8,6 @@ import (
 	"github.com/iddanilov/metricsAndAlerting/pkg/certs"
 	"log"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/gin-contrib/pprof"
@@ -40,7 +38,8 @@ func main() {
 	storage := &db.DB{}
 	log.Println("create router")
 
-	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	//ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	ctx := context.Background()
 
 	cfg := server.NewConfig()
 	file := server.NewStorages(cfg)
@@ -114,6 +113,8 @@ func writeDBScheduler(ctx context.Context, reportIntervalTicker *time.Ticker, fi
 			select {
 			case <-ctx.Done():
 				log.Println("Stopped by user")
+				log.Println("Write data in file")
+				file.SaveMetricInFile()
 				os.Exit(0)
 			case <-reportIntervalTicker.C:
 				log.Println("Write data in file")
