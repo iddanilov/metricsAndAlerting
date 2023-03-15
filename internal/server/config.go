@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	goflag "flag"
 	"log"
 	"os"
@@ -17,21 +18,43 @@ var (
 	Restore       = flag.BoolP("r", "r", true, "help message for Restore")
 	Key           = flag.StringP("k", "k", "", "help message for KEY")
 	DSN           = flag.StringP("d", "d", "", "help message for DSN")
+	CryptoKey     = flag.StringP("certs-key", "", "", "help message for DSN")
+	//JsonConfig    = flag.StringP("config", "c", "", "help message for DSN")
 )
 
 type Config struct {
-	Address       string        `env:"ADDRESS"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL"`
-	StoreFile     string        `env:"STORE_FILE"`
-	Restore       bool          `env:"RESTORE"`
+	Address       string        `env:"ADDRESS" json:"address"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL" json:"store_interval"`
+	StoreFile     string        `env:"STORE_FILE" json:"store_file"`
+	Restore       bool          `env:"RESTORE" json:"restore"`
 	Key           string        `env:"KEY"`
-	DSN           string        `env:"DATABASE_DSN"`
+	DSN           string        `env:"DATABASE_DSN" json:"database_dsn"`
+	CryptoKey     string        `env:"CRYPTO_KEY" json:"crypto_key"`
+	//JsonConfig    string        `env:"CONFIG"`
 }
 
 func NewConfig() *Config {
+	//var jsonConfig Config
+
 	var cfg Config
 
 	err := env.Parse(&cfg)
+
+	//if *JsonConfig != "" || cfg.JsonConfig != "" {
+	//	log.Println("use JsonConfig")
+	//	if jsonConfig.JsonConfig != "" {
+	//		err := readFromJson(jsonConfig.JsonConfig, &jsonConfig)
+	//		if err != nil {
+	//			return nil
+	//		}
+	//	} else {
+	//		err := readFromJson(*JsonConfig, &jsonConfig)
+	//		if err != nil {
+	//			return nil
+	//		}
+	//	}
+	//}
+
 	if err != nil {
 		panic(err)
 	}
@@ -39,14 +62,31 @@ func NewConfig() *Config {
 	flag.Parse()
 
 	if cfg.Address == "" {
+		log.Println("cfg.Address: ", cfg.Address)
 		cfg.Address = *Address
+		//log.Println("jsonConfig.Address: ", jsonConfig.Address)
+		//if Address != nil {
+		//	cfg.Address = *Address
+		//} else {
+		//	//cfg.Address = jsonConfig.Address
+		//}
 	}
 	if cfg.StoreInterval == 0 {
 		cfg.StoreInterval = *StoreInterval
+
+		//if StoreInterval != nil {
+		//	cfg.StoreInterval = *StoreInterval
+		//} else {
+		//cfg.StoreInterval = jsonConfig.StoreInterval
+		//}
+
 	}
 	if cfg.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
 	}
+	//if cfg.CryptoKey == "" {
+	//	cfg.CryptoKey = *CryptoKey
+	//}
 	if *Key != "" {
 		cfg.Key = *Key
 	}
@@ -57,8 +97,30 @@ func NewConfig() *Config {
 		cfg.Restore = *Restore
 	}
 
-	log.Println(cfg.Address)
-	log.Println(cfg)
 	return &cfg
 
+}
+
+func readFromJson(path string, cfg *Config) error {
+
+	var temp []byte
+
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	_, err = f.Read(temp) // filename is the JSON file to read
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(temp, cfg)
+	if err != nil {
+		log.Println("Cannot unmarshal the json ", err)
+		return err
+	}
+
+	return nil
 }
