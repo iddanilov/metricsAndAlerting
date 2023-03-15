@@ -60,9 +60,8 @@ func main() {
 	log.Println(useDB)
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
-	if !useDB {
-		go writeDBScheduler(ctx, reportIntervalTicker, file)
-	}
+
+	go writeDBScheduler(ctx, reportIntervalTicker, file)
 
 	r := gin.New()
 
