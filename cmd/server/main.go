@@ -66,7 +66,7 @@ func main() {
 	r := gin.New()
 
 	ginSwagger.WrapHandler(swaggerfiles.Handler,
-		ginSwagger.URL("http://localhost:9769/swagger/doc.json"),
+		ginSwagger.URL("http://localhost:8080/swagger/doc.json"),
 		ginSwagger.DefaultModelsExpandDepth(-1))
 
 	pprof.Register(r)
