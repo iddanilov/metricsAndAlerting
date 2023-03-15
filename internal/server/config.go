@@ -19,7 +19,7 @@ var (
 	Key           = flag.StringP("k", "k", "", "help message for KEY")
 	DSN           = flag.StringP("d", "d", "", "help message for DSN")
 	CryptoKey     = flag.StringP("certs-key", "", "", "help message for DSN")
-	JsonConfig    = flag.StringP("config", "c", "", "help message for DSN")
+	//JsonConfig    = flag.StringP("config", "c", "", "help message for DSN")
 )
 
 type Config struct {
@@ -30,7 +30,7 @@ type Config struct {
 	Key           string        `env:"KEY"`
 	DSN           string        `env:"DATABASE_DSN" json:"database_dsn"`
 	CryptoKey     string        `env:"CRYPTO_KEY" json:"crypto_key"`
-	JsonConfig    string        `env:"CONFIG"`
+	//JsonConfig    string        `env:"CONFIG"`
 }
 
 func NewConfig() *Config {
@@ -40,20 +40,20 @@ func NewConfig() *Config {
 
 	err := env.Parse(&cfg)
 
-	if *JsonConfig != "" || cfg.JsonConfig != "" {
-		log.Println("use JsonConfig")
-		if jsonConfig.JsonConfig != "" {
-			err := readFromJson(jsonConfig.JsonConfig, &jsonConfig)
-			if err != nil {
-				return nil
-			}
-		} else {
-			err := readFromJson(*JsonConfig, &jsonConfig)
-			if err != nil {
-				return nil
-			}
-		}
-	}
+	//if *JsonConfig != "" || cfg.JsonConfig != "" {
+	//	log.Println("use JsonConfig")
+	//	if jsonConfig.JsonConfig != "" {
+	//		err := readFromJson(jsonConfig.JsonConfig, &jsonConfig)
+	//		if err != nil {
+	//			return nil
+	//		}
+	//	} else {
+	//		err := readFromJson(*JsonConfig, &jsonConfig)
+	//		if err != nil {
+	//			return nil
+	//		}
+	//	}
+	//}
 
 	if err != nil {
 		panic(err)
