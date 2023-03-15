@@ -50,7 +50,7 @@ func TestSaveCounterMetric(t *testing.T) {
 		{
 			name: "[Positive] Проверка метода SaveCounterMetric",
 			countMetricResult: client.Metrics{
-				ID:    "PollCount",
+				ID:    "PollCount2",
 				MType: "Counter",
 				Value: &floatValue,
 			},
