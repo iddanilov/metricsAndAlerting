@@ -44,19 +44,26 @@ type Client struct {
 }
 
 func NewClient() *Client {
-	var cfg Config
-	if *JsonConfig != "" || cfg.JsonConfig != "" {
-		if cfg.JsonConfig != "" {
-			readFromJson(cfg.JsonConfig, &cfg)
+	var jsonConfig Config
+
+	if *JsonConfig != "" || jsonConfig.JsonConfig != "" {
+		if jsonConfig.JsonConfig != "" {
+			readFromJson(jsonConfig.JsonConfig, &jsonConfig)
 		} else {
-			readFromJson(*JsonConfig, &cfg)
+			readFromJson(*JsonConfig, &jsonConfig)
 		}
 	}
+	var cfg Config
 	err := env.Parse(&cfg)
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	flag.Parse()
 	if cfg.Address == "" {
-		cfg.Address = *Address
+		if Address != nil {
+			cfg.Address = *Address
+		} else {
+			cfg.Address = jsonConfig.Address
+		}
+
 	}
 	if cfg.CryptoKey == "" {
 		cfg.CryptoKey = *CryptoKey

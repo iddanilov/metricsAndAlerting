@@ -34,15 +34,16 @@ type Config struct {
 }
 
 func NewConfig() *Config {
-	var cfg Config
+	var jsonConfig Config
 
-	if *JsonConfig != "" || cfg.JsonConfig != "" {
-		if cfg.JsonConfig != "" {
-			readFromJson(cfg.JsonConfig, &cfg)
+	if *JsonConfig != "" || jsonConfig.JsonConfig != "" {
+		if jsonConfig.JsonConfig != "" {
+			readFromJson(jsonConfig.JsonConfig, &jsonConfig)
 		} else {
-			readFromJson(*JsonConfig, &cfg)
+			readFromJson(*JsonConfig, &jsonConfig)
 		}
 	}
+	var cfg Config
 
 	err := env.Parse(&cfg)
 	if err != nil {
@@ -52,10 +53,19 @@ func NewConfig() *Config {
 	flag.Parse()
 
 	if cfg.Address == "" {
-		cfg.Address = *Address
+		if Address != nil {
+			cfg.Address = *Address
+		} else {
+			cfg.Address = jsonConfig.Address
+		}
 	}
 	if cfg.StoreInterval == 0 {
-		cfg.StoreInterval = *StoreInterval
+		if StoreInterval != nil {
+			cfg.StoreInterval = *StoreInterval
+		} else {
+			cfg.StoreInterval = jsonConfig.StoreInterval
+		}
+
 	}
 	if cfg.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
