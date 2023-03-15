@@ -88,7 +88,7 @@ func main() {
 	if cfg.CryptoKey != "" {
 		r.RunTLS(cfg.Address, cert.Path, cfg.CryptoKey)
 	} else {
-		r.Run()
+		r.Run(cfg.Address)
 	}
 }
 
