@@ -36,6 +36,14 @@ type Config struct {
 func NewConfig() *Config {
 	var cfg Config
 
+	if *JsonConfig != "" || cfg.JsonConfig != "" {
+		if cfg.JsonConfig != "" {
+			readFromJson(cfg.JsonConfig, &cfg)
+		} else {
+			readFromJson(*JsonConfig, &cfg)
+		}
+	}
+
 	err := env.Parse(&cfg)
 	if err != nil {
 		panic(err)
@@ -63,14 +71,6 @@ func NewConfig() *Config {
 	}
 	if os.Getenv("RESTORE") == "" {
 		cfg.Restore = *Restore
-	}
-
-	if *JsonConfig != "" || cfg.JsonConfig != "" {
-		if cfg.JsonConfig != "" {
-			readFromJson(cfg.JsonConfig, &cfg)
-		} else {
-			readFromJson(*JsonConfig, &cfg)
-		}
 	}
 
 	return &cfg
