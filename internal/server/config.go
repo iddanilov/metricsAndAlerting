@@ -64,14 +64,14 @@ func NewConfig() *Config {
 	if cfg.Address == "" {
 		log.Println("cfg.Address: ", cfg.Address)
 		log.Println("jsonConfig.Address: ", jsonConfig.Address)
-		if Address != nil {
+		if *Address != "" {
 			cfg.Address = *Address
 		} else {
 			cfg.Address = jsonConfig.Address
 		}
 	}
 	if cfg.StoreInterval == 0 {
-		if StoreInterval != nil {
+		if *StoreInterval != 0 {
 			cfg.StoreInterval = *StoreInterval
 		} else {
 			cfg.StoreInterval = jsonConfig.StoreInterval
