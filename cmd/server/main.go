@@ -8,6 +8,8 @@ import (
 	"github.com/iddanilov/metricsAndAlerting/pkg/certs"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gin-contrib/pprof"
@@ -38,8 +40,7 @@ func main() {
 	storage := &db.DB{}
 	log.Println("create router")
 
-	//ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	ctx := context.Background()
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	cfg := server.NewConfig()
 	file := server.NewStorages(cfg)
@@ -60,7 +61,7 @@ func main() {
 
 	reportIntervalTicker := time.NewTicker(cfg.StoreInterval)
 	if !useDB {
-		writeDBScheduler(ctx, reportIntervalTicker, file)
+		go writeDBScheduler(ctx, reportIntervalTicker, file)
 	}
 
 	r := gin.New()
