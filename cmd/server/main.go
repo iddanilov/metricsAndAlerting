@@ -109,21 +109,20 @@ func StartServer() {
 }
 
 func writeDBScheduler(ctx context.Context, reportIntervalTicker *time.Ticker, file *server.Storage) {
-	go func(ctx context.Context) {
-		for {
-			select {
-			case <-ctx.Done():
-				log.Println("Stopped by user")
-				log.Println("Write data in file")
-				file.SaveMetricInFile()
-				os.Exit(0)
-			case <-reportIntervalTicker.C:
-				log.Println("Write data in file")
-				err := file.SaveMetricInFile()
-				if err != nil {
-					log.Println(err)
-				}
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Stopped by user")
+			log.Println("Write data in file")
+			file.SaveMetricInFile()
+			os.Exit(0)
+		case <-reportIntervalTicker.C:
+			log.Println("Write data in file")
+			err := file.SaveMetricInFile()
+			if err != nil {
+				log.Println(err)
 			}
 		}
-	}(ctx)
+	}
+
 }
