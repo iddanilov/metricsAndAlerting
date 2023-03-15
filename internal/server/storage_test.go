@@ -61,6 +61,8 @@ func TestSaveCounterMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := NewConfig()
 
+			cfg.Restore = false
+
 			storage := NewStorages(cfg)
 			storage.SaveCountMetric(tt.countMetricResult)
 
