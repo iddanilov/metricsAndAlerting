@@ -41,6 +41,7 @@ func TestSaveGaugeMetric(t *testing.T) {
 }
 
 func TestSaveCounterMetric(t *testing.T) {
+	var floatValue = 5.5
 	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
 		name              string
@@ -50,7 +51,7 @@ func TestSaveCounterMetric(t *testing.T) {
 		{
 			name: "[Positive] Проверка метода SaveCounterMetric",
 			countMetricResult: client.Metrics{
-				ID:    "PollCount2",
+				ID:    "PollCount",
 				MType: "Counter",
 				Value: &floatValue,
 			},
