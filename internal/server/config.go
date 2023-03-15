@@ -34,7 +34,7 @@ type Config struct {
 }
 
 func NewConfig() *Config {
-	var jsonConfig Config
+	//var jsonConfig Config
 
 	var cfg Config
 
@@ -63,27 +63,30 @@ func NewConfig() *Config {
 
 	if cfg.Address == "" {
 		log.Println("cfg.Address: ", cfg.Address)
-		log.Println("jsonConfig.Address: ", jsonConfig.Address)
-		if Address != nil {
-			cfg.Address = *Address
-		} else {
-			cfg.Address = jsonConfig.Address
-		}
+		cfg.Address = *Address
+		//log.Println("jsonConfig.Address: ", jsonConfig.Address)
+		//if Address != nil {
+		//	cfg.Address = *Address
+		//} else {
+		//	//cfg.Address = jsonConfig.Address
+		//}
 	}
 	if cfg.StoreInterval == 0 {
-		if StoreInterval != nil {
-			cfg.StoreInterval = *StoreInterval
-		} else {
-			cfg.StoreInterval = jsonConfig.StoreInterval
-		}
+		cfg.StoreInterval = *StoreInterval
+
+		//if StoreInterval != nil {
+		//	cfg.StoreInterval = *StoreInterval
+		//} else {
+		//cfg.StoreInterval = jsonConfig.StoreInterval
+		//}
 
 	}
 	if cfg.StoreFile == "" {
 		cfg.StoreFile = *StoreFile
 	}
-	if cfg.CryptoKey == "" {
-		cfg.CryptoKey = *CryptoKey
-	}
+	//if cfg.CryptoKey == "" {
+	//	cfg.CryptoKey = *CryptoKey
+	//}
 	if *Key != "" {
 		cfg.Key = *Key
 	}
