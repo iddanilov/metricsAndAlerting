@@ -8,9 +8,8 @@ import (
 	client "github.com/iddanilov/metricsAndAlerting/internal/models"
 )
 
-var floatValue = 5.5
-
 func TestSaveGaugeMetric(t *testing.T) {
+	var floatValue = 5.5
 	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
 		name              string
@@ -41,6 +40,7 @@ func TestSaveGaugeMetric(t *testing.T) {
 }
 
 func TestSaveCounterMetric(t *testing.T) {
+	var value int64 = 5
 	// создаём массив тестов: имя и желаемый результат
 	tests := []struct {
 		name              string
@@ -52,7 +52,7 @@ func TestSaveCounterMetric(t *testing.T) {
 			countMetricResult: client.Metrics{
 				ID:    "PollCount",
 				MType: "Counter",
-				Value: &floatValue,
+				Delta: &value,
 			},
 		},
 	}
@@ -60,6 +60,9 @@ func TestSaveCounterMetric(t *testing.T) {
 		// запускаем каждый тест
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := NewConfig()
+
+			cfg.Restore = false
+
 			storage := NewStorages(cfg)
 			storage.SaveCountMetric(tt.countMetricResult)
 
