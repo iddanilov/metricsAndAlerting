@@ -137,7 +137,6 @@ func (c *Client) sendRequest(req *http.Request) error {
 	defer resp.Body.Close()
 
 	return nil
-
 }
 
 func readFromJson(path string, cfg *Config) error {

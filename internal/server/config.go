@@ -36,16 +36,25 @@ type Config struct {
 func NewConfig() *Config {
 	var jsonConfig Config
 
-	if *JsonConfig != "" || jsonConfig.JsonConfig != "" {
-		if jsonConfig.JsonConfig != "" {
-			readFromJson(jsonConfig.JsonConfig, &jsonConfig)
-		} else {
-			readFromJson(*JsonConfig, &jsonConfig)
-		}
-	}
 	var cfg Config
 
 	err := env.Parse(&cfg)
+
+	if *JsonConfig != "" || cfg.JsonConfig != "" {
+		log.Println("use JsonConfig")
+		if jsonConfig.JsonConfig != "" {
+			err := readFromJson(jsonConfig.JsonConfig, &jsonConfig)
+			if err != nil {
+				return nil
+			}
+		} else {
+			err := readFromJson(*JsonConfig, &jsonConfig)
+			if err != nil {
+				return nil
+			}
+		}
+	}
+
 	if err != nil {
 		panic(err)
 	}
@@ -53,6 +62,8 @@ func NewConfig() *Config {
 	flag.Parse()
 
 	if cfg.Address == "" {
+		log.Println("cfg.Address: ", cfg.Address)
+		log.Println("jsonConfig.Address: ", jsonConfig.Address)
 		if Address != nil {
 			cfg.Address = *Address
 		} else {
