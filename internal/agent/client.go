@@ -78,6 +78,7 @@ func (c *Client) SendMetricByPath(params models.Metrics) error {
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/update/%s/%s/%v", c.Config.Address, params.MType, params.ID, value), nil)
+	req.Header.Set("X-Real-IP", c.Config.Address)
 	if err != nil {
 		return err
 	}

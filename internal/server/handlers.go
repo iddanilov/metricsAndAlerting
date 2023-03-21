@@ -20,21 +20,23 @@ import (
 )
 
 type RouterGroup struct {
-	rg    *gin.RouterGroup
-	s     *Storage
-	key   string
-	db    *db.DB
-	useDB bool
+	rg            *gin.RouterGroup
+	s             *Storage
+	key           string
+	db            *db.DB
+	useDB         bool
+	trustedSubnet string
 }
 
 // NewRouterGroup - create new gin route group
-func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *db.DB, useDB bool) *RouterGroup {
+func NewRouterGroup(rg *gin.RouterGroup, s *Storage, key string, db *db.DB, useDB bool, trustedSubnet string) *RouterGroup {
 	return &RouterGroup{
-		rg:    rg,
-		s:     s,
-		key:   key,
-		db:    db,
-		useDB: useDB,
+		rg:            rg,
+		s:             s,
+		key:           key,
+		db:            db,
+		useDB:         useDB,
+		trustedSubnet: trustedSubnet,
 	}
 }
 
@@ -42,13 +44,13 @@ func (h *RouterGroup) Routes() {
 	group := h.rg.Group("/")
 	group.Use()
 	{
-		group.GET("/", middleware.Middleware(h.MetricList))
-		group.POST("/update/:type/:name/:value", middleware.Middleware(h.UpdateMetricByPath))
-		group.POST("/update/", middleware.Middleware(h.UpdateMetric))
-		group.POST("/updates/", middleware.Middleware(h.UpdateMetrics))
-		group.POST("/value/", middleware.Middleware(h.GetMetric))
-		group.GET("/value/:type/:name", middleware.Middleware(h.GetMetricByPath))
-		group.GET("/ping", middleware.Middleware(h.Ping))
+		group.GET("/", middleware.Middleware(h.MetricList, h.trustedSubnet))
+		group.POST("/update/:type/:name/:value", middleware.Middleware(h.UpdateMetricByPath, h.trustedSubnet))
+		group.POST("/update/", middleware.Middleware(h.UpdateMetric, h.trustedSubnet))
+		group.POST("/updates/", middleware.Middleware(h.UpdateMetrics, h.trustedSubnet))
+		group.POST("/value/", middleware.Middleware(h.GetMetric, h.trustedSubnet))
+		group.GET("/value/:type/:name", middleware.Middleware(h.GetMetricByPath, h.trustedSubnet))
+		group.GET("/ping", middleware.Middleware(h.Ping, h.trustedSubnet))
 	}
 }
 

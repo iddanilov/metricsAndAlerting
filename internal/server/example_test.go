@@ -29,7 +29,7 @@ func ExampleRouterGroup_UpdateMetricByPath() {
 
 	r := gin.New()
 	r.RedirectTrailingSlash = false
-	rg := server.NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, false)
+	rg := server.NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, false, "")
 	rg.Routes()
 
 	// запускаем сервер
@@ -68,7 +68,7 @@ func ExampleRouterGroup_GetMetric() {
 
 	r := gin.New()
 	r.RedirectTrailingSlash = false
-	rg := server.NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, true)
+	rg := server.NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, true, "")
 	rg.Routes()
 
 	// запускаем сервер
@@ -102,7 +102,7 @@ func ExampleRouterGroup_GetMetric() {
 //
 //	r := gin.New()
 //	r.RedirectTrailingSlash = false
-//	rg := server.NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, false)
+//	rg := server.NewRouterGroup(&r.RouterGroup, &storage, "LOOOOOOOOOOOOOOL", db, false, "")
 //	rg.Routes()
 //
 //	// запускаем сервер

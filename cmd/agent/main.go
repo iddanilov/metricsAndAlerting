@@ -16,9 +16,12 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/mem"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	client "github.com/iddanilov/metricsAndAlerting/internal/agent"
 	"github.com/iddanilov/metricsAndAlerting/internal/models"
+	pb "github.com/iddanilov/metricsAndAlerting/proto"
 )
 
 const (
@@ -89,6 +92,19 @@ func hash(m string, key []byte) (string, error) {
 func sendMetrics(jobs <-chan []models.Metrics, resp *client.Client) {
 	var hashValue string
 	var err error
+
+	// устанавливаем соединение с сервером
+	conn, err := grpc.Dial(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+	// получаем переменную интерфейсного типа UsersClient,
+	// через которую будем отправлять сообщения
+	c := pb.NewMetricsAndAlertingClient(conn)
+
+	fmt.Println(c)
+
 	for j := range jobs {
 		for _, metrics := range j {
 			if !metrics.MetricISEmpty() {
@@ -111,8 +127,24 @@ func sendMetrics(jobs <-chan []models.Metrics, resp *client.Client) {
 				}
 
 				log.Println("body: ", metrics)
+				metric := pb.MetricRequest{
+					ID:    metrics.ID,
+					MType: metrics.MType,
+					Hash:  metrics.Hash,
+				}
+				if metrics.Delta != nil {
+					metric.Delta = *metrics.Delta
+				}
+				if metrics.Value != nil {
+					metric.Value = *metrics.Value
+				}
 
-				err := resp.SendMetricByPath(metrics)
+				_, err := c.SaveMetrics(context.Background(), &metric)
+				if err != nil {
+					log.Println("Err: ", err.Error())
+				}
+
+				err = resp.SendMetricByPath(metrics)
 				if err != nil {
 					log.Println("Err: ", err.Error())
 				}

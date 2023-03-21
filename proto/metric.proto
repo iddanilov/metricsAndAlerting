@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package demo;
+
+
+option go_package = "metricsAndAlerting/proto";
+
+
+message MetricRequest {
+  string ID = 1;
+  string MType = 2;
+  int64 Delta = 3;
+  double Value = 4;
+  string Hash = 5;
+}
+
+message MetricResponse {
+  string error = 1; // ошибка
+}
+
+service MetricsAndAlerting {
+  rpc SaveMetrics(MetricRequest) returns (MetricResponse);
+}
