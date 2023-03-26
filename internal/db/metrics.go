@@ -57,7 +57,7 @@ func (db *DB) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
 
 	defer stmt.Close()
 
-	if _, err = stmt.Exec(metrics.ID, metrics.MType, metrics.Delta, metrics.Value); err != nil {
+	if _, err = stmt.ExecContext(ctx, metrics.ID, metrics.MType, metrics.Delta, metrics.Value); err != nil {
 		log.Println("Can't make Exec", err)
 		if err = tx.Rollback(); err != nil {
 			log.Fatalf("update drivers: unable to rollback: %v", err)

@@ -2,9 +2,11 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	"github.com/iddanilov/metricsAndAlerting/internal/db"
 	"github.com/iddanilov/metricsAndAlerting/internal/server"
 	"log"
+	"strconv"
 	"strings"
 
 	client "github.com/iddanilov/metricsAndAlerting/internal/models"
@@ -34,10 +36,15 @@ func NewMetricsAndAlertingServer(storage *server.Storage, db *db.DB) *MetricsAnd
 func (s *MetricsAndAlertingServer) SaveMetrics(ctx context.Context, request *pb.MetricRequest) (*pb.MetricResponse, error) {
 	log.Println("request: ", request)
 	if strings.ToLower(request.MType) == "gauge" {
-		err := s.db.UpdateMetric(ctx, client.Metrics{
+		value, err := strconv.ParseFloat(fmt.Sprintf("%.3f", request.Value), 64)
+		if err != nil {
+			log.Println(err)
+			return nil, err
+		}
+		err = s.db.UpdateMetric(ctx, client.Metrics{
 			ID:    request.ID,
 			MType: strings.ToLower(request.MType),
-			Value: &request.Value,
+			Value: &value,
 		})
 		if err != nil {
 			log.Println(err)
