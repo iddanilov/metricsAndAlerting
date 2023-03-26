@@ -11,11 +11,16 @@ import (
 
 type appHandler func(context *gin.Context) ([]byte, error)
 
-func Middleware(h appHandler) gin.HandlerFunc {
+func Middleware(h appHandler, trustedSubnet string) gin.HandlerFunc {
 	return func(context *gin.Context) {
 		r := context.Request
 		w := context.Writer
 
+		if trustedSubnet != "" {
+			if r.Header.Get("X-Real-IP") != trustedSubnet {
+				http.Error(w, "", http.StatusForbidden)
+			}
+		}
 		if r.Header.Get(`Content-Encoding`) == `gzip` {
 			gz, err := gzip.NewReader(r.Body)
 			if err != nil {

@@ -17,6 +17,7 @@ var (
 	Restore       = flag.BoolP("r", "r", true, "help message for Restore")
 	Key           = flag.StringP("k", "k", "", "help message for KEY")
 	DSN           = flag.StringP("d", "d", "", "help message for DSN")
+	TrustedSubnet = flag.StringP("t", "t", "", "help message for DSN")
 )
 
 type Config struct {
@@ -26,6 +27,7 @@ type Config struct {
 	Restore       bool          `env:"RESTORE"`
 	Key           string        `env:"KEY"`
 	DSN           string        `env:"DATABASE_DSN"`
+	TrustedSubnet string        `env:"TRUSTED_SUBNET"`
 }
 
 func NewConfig() *Config {
@@ -40,6 +42,9 @@ func NewConfig() *Config {
 
 	if cfg.Address == "" {
 		cfg.Address = *Address
+	}
+	if cfg.TrustedSubnet == "" {
+		cfg.TrustedSubnet = *TrustedSubnet
 	}
 	if cfg.StoreInterval == 0 {
 		cfg.StoreInterval = *StoreInterval
