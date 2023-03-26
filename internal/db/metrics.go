@@ -40,11 +40,39 @@ func (db *DB) CreateTable(ctx context.Context) error {
 }
 
 func (db *DB) UpdateMetric(ctx context.Context, metrics models.Metrics) error {
-	_, err := db.DB.ExecContext(ctx, queryUpdateMetrics, metrics.ID, metrics.MType, metrics.Delta, metrics.Value)
-	if err != nil {
-		log.Println("Can't Update Metric")
+	if db.DB == nil {
+		return errors.New("you haven`t opened the database connection")
 	}
-	return err
+	tx, err := db.DB.Begin()
+	if err != nil {
+		log.Println("Can't create tx", err)
+		return err
+	}
+
+	stmt, err := tx.Prepare(queryUpdateMetrics)
+	if err != nil {
+		log.Println("Can't create stmt", err)
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err = stmt.Exec(metrics.ID, metrics.MType, metrics.Delta, metrics.Value); err != nil {
+		log.Println("Can't make Exec", err)
+		if err = tx.Rollback(); err != nil {
+			log.Fatalf("update drivers: unable to rollback: %v", err)
+		}
+		return err
+
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Fatalf("update drivers: unable to commit: %v", err)
+		return err
+	}
+
+	db.buffer = db.buffer[:0]
+	return nil
 }
 
 func (db *DB) UpdateMetrics(metrics []models.Metrics) error {

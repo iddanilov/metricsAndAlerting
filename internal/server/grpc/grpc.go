@@ -49,11 +49,12 @@ func (s *MetricsAndAlertingServer) SaveMetrics(ctx context.Context, request *pb.
 			Value: &request.Value,
 		})
 	} else if strings.ToLower(request.MType) == "counter" {
+		request.Value = 0.0
 		err := s.db.UpdateMetric(ctx, client.Metrics{
 			ID:    request.ID,
 			MType: strings.ToLower(request.MType),
 			Delta: &request.Delta,
-			Value: nil,
+			Value: &request.Value,
 		})
 		if err != nil {
 			log.Println(err)
